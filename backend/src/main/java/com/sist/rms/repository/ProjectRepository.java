@@ -1,0 +1,14 @@
+package com.sist.rms.repository;
+
+import com.sist.rms.entity.Project;
+import com.sist.rms.entity.ProjectStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface ProjectRepository extends JpaRepository<Project, Long> {
+
+    List<Project> findAllByOrderByStartDateAsc();
+
+    long countByStatus(ProjectStatus status);
+}
