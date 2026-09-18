@@ -234,7 +234,8 @@ CREATE TABLE simulation_scenarios (
     milestone_id            BIGINT        NULL,
     current_developer_id    BIGINT        NOT NULL,
     new_developer_id        BIGINT        NOT NULL,
-    allocation_percentage   INT           NOT NULL,
+    current_allocation_percentage   INT   NOT NULL,
+    simulated_allocation_percentage INT   NOT NULL,
     current_cost            DECIMAL(14,2) NOT NULL DEFAULT 0,
     simulated_cost          DECIMAL(14,2) NOT NULL DEFAULT 0,
     current_skill_match     INT           NOT NULL DEFAULT 0,
@@ -251,5 +252,6 @@ CREATE TABLE simulation_scenarios (
     CONSTRAINT fk_sim_milestone FOREIGN KEY (milestone_id)         REFERENCES milestones(id) ON DELETE SET NULL,
     CONSTRAINT fk_sim_curdev    FOREIGN KEY (current_developer_id) REFERENCES developers(id) ON DELETE CASCADE,
     CONSTRAINT fk_sim_newdev    FOREIGN KEY (new_developer_id)     REFERENCES developers(id) ON DELETE CASCADE,
-    CONSTRAINT chk_sim_percent  CHECK (allocation_percentage BETWEEN 1 AND 100)
+    CONSTRAINT chk_sim_cur_percent CHECK (current_allocation_percentage   BETWEEN 1 AND 100),
+    CONSTRAINT chk_sim_sim_percent CHECK (simulated_allocation_percentage BETWEEN 1 AND 100)
 ) ENGINE=InnoDB;

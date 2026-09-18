@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What-If Resource Swap Simulator - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">What-If Resource Swap Simulator</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="card no-print">
+        <h3>Set up the swap</h3>
+        <form class="app-form" id="simulation-form">
+            <div class="form-field"><label for="sim-milestone">Milestone</label><select id="sim-milestone" required></select></div>
+            <div class="form-field"><label for="sim-current">Current developer</label><select id="sim-current" required></select></div>
+            <div class="form-field"><label for="sim-new">Replacement developer</label><select id="sim-new" required></select></div>
+            <div class="form-field"><label for="sim-percentage">Allocation for the replacement (%)</label><input type="number" id="sim-percentage" min="1" max="100" placeholder="same as now"></div>
+            <div class="form-actions">
+                <button type="submit">Run simulation</button>
+                <button type="button" class="secondary" id="sim-reset">Clear</button>
+            </div>
+        </form>
+        <p class="inline-note">Running a simulation only calculates. Nothing is written to the database until you press "Save this scenario".</p>
+    </div>
+
+    <div id="result-area"></div>
+
+    <div class="card">
+        <h3>Saved scenarios</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Scenario</th><th>Project</th><th>Milestone</th><th>Swap</th><th>Cost impact</th><th>Saved on</th><th>Actions</th></tr></thead>
+            <tbody id="scenario-body"></tbody>
+        </table></div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/simulator.js"></script>
+
+</body>
+</html>

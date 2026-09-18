@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 /**
  * Budget summary of one project.
  *
+ * The burn rate and the forecast live in BudgetForecastResponse.
+ *
  *   remainingBudget = totalBudget - currentSpending
  *   utilization     = (currentSpending / totalBudget) * 100
  *
@@ -20,9 +22,6 @@ public class BudgetResponse {
 
     /** null when it cannot be calculated. */
     private Double utilizationPercentage;
-
-    /** Rupees spent per day so far, null when there is no spending. */
-    private BigDecimal burnRatePerDay;
 
     private boolean hasSpendingData;
 
@@ -43,8 +42,6 @@ public class BudgetResponse {
     public void setRemainingBudget(BigDecimal remainingBudget) { this.remainingBudget = remainingBudget; }
     public Double getUtilizationPercentage() { return utilizationPercentage; }
     public void setUtilizationPercentage(Double utilizationPercentage) { this.utilizationPercentage = utilizationPercentage; }
-    public BigDecimal getBurnRatePerDay() { return burnRatePerDay; }
-    public void setBurnRatePerDay(BigDecimal burnRatePerDay) { this.burnRatePerDay = burnRatePerDay; }
     public boolean isHasSpendingData() { return hasSpendingData; }
     public void setHasSpendingData(boolean hasSpendingData) { this.hasSpendingData = hasSpendingData; }
     public String getWarningLevel() { return warningLevel; }

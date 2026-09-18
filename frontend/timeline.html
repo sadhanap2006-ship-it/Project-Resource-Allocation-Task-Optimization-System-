@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Timeline - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">Project Timeline</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="toolbar no-print">
+        <div class="form-field"><label for="timeline-project">Show</label><select id="timeline-project"></select></div>
+    </div>
+    <div class="card">
+        <div id="timeline-area"></div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/timeline.js"></script>
+
+</body>
+</html>

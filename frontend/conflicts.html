@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conflicts and Skill Gaps - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">Conflicts and Skill Gaps</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="card">
+        <h3>Over-allocation conflicts</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Developer</th><th>Period</th><th>Allocated</th><th>Availability</th><th>Caused by</th></tr></thead>
+            <tbody id="over-body"></tbody>
+        </table></div>
+        <p class="inline-note">Only allocations whose dates overlap are added together. Work in January does not compete with work in March.</p>
+    </div>
+
+    <div class="card">
+        <h3>Leave conflicts</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Developer</th><th>Period</th><th>Allocated</th><th>Details</th></tr></thead>
+            <tbody id="leave-body"></tbody>
+        </table></div>
+    </div>
+
+    <div class="card">
+        <h3>Skill gaps</h3>
+        <div id="skillgap-body"></div>
+    </div>
+
+    <div class="card">
+        <h3>Resource utilization</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Developer</th><th>Allocation</th><th style="width:28%">Load</th><th>Availability</th><th>Remaining</th><th>Status</th></tr></thead>
+            <tbody id="utilization-body"></tbody>
+        </table></div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/conflicts.js"></script>
+
+</body>
+</html>

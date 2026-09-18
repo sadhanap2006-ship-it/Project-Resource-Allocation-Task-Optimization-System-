@@ -263,7 +263,7 @@ Saved what-if scenarios. **Nothing is written here unless the manager presses Sa
 | milestone_id | BIGINT | NULL, FK → milestones(id) |
 | current_developer_id | BIGINT | NOT NULL, FK → developers(id) |
 | new_developer_id | BIGINT | NOT NULL, FK → developers(id) |
-| allocation_percentage | INT | NOT NULL, 1–100 |
+| current_allocation_percentage / simulated_allocation_percentage | INT | NOT NULL, 1–100 |
 | current_cost / simulated_cost | DECIMAL(14,2) | NOT NULL |
 | current_skill_match / simulated_skill_match | INT | NOT NULL (0–100 %) |
 | current_conflicts / simulated_conflicts | INT | NOT NULL |

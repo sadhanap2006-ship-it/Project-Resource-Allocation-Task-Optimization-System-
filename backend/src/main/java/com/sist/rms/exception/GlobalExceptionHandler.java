@@ -6,6 +6,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,18 @@ public class GlobalExceptionHandler {
         ApiError body = new ApiError(HttpStatus.BAD_REQUEST.value(), "Validation Failed",
                 List.of("Request body is not valid JSON, or a date is not in yyyy-MM-dd format"));
         return ResponseEntity.badRequest().body(body);
+    }
+
+    /**
+     * A page or file that does not exist -> 404, not 500.
+     * Without this, the catch-all below would turn a missing favicon or a
+     * mistyped page address into a server error.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleMissingStaticResource(NoResourceFoundException ex) {
+        ApiError body = new ApiError(HttpStatus.NOT_FOUND.value(), "Not Found",
+                List.of("No page or file found at " + ex.getResourcePath()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     /** Anything unexpected -> 500, but still as clean JSON. */

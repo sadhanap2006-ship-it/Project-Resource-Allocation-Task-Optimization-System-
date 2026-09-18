@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="landing">
+    <div class="landing-box">
+        <h1>Project Resource Allocation System</h1>
+        <p class="tagline">SIST CSE Capstone Project</p>
+
+        <div id="message-area"></div>
+
+        <form class="app-form" id="login-form">
+            <div class="form-field">
+                <label for="username">Username</label>
+                <input type="text" id="username" value="manager" required>
+            </div>
+            <div class="form-field">
+                <label for="password">Password</label>
+                <input type="password" id="password" value="manager123" required>
+            </div>
+            <div class="form-actions">
+                <button type="submit">Sign in</button>
+            </div>
+        </form>
+
+        <div class="hint">
+            <strong>Demo accounts</strong><br>
+            Project Manager &nbsp;&rarr;&nbsp; <code>manager</code> / <code>manager123</code><br>
+            Developer &nbsp;&rarr;&nbsp; <code>arun</code> / <code>arun123</code><br>
+            Other developers: priya, rahul, divya, karthik (password = name + 123)
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+    /* The login only decides WHICH dashboard to open. */
+    document.getElementById('login-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+        clearMessage('message-area');
+        try {
+            const session = await api.post('/api/login', {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            });
+            saveSession(session);
+            window.location.href = (session.role === 'DEVELOPER')
+                ? 'developer-dashboard.html'
+                : 'dashboard.html';
+        } catch (error) {
+            showError('message-area', error);
+        }
+    });
+
+    clearSession();
+</script>
+
+</body>
+</html>

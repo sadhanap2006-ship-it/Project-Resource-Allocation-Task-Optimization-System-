@@ -39,8 +39,13 @@ public class SimulationScenario {
     @JoinColumn(name = "new_developer_id", nullable = false)
     private Developer newDeveloper;
 
-    @Column(name = "allocation_percentage", nullable = false)
-    private Integer allocationPercentage;
+    /** What the current developer is allocated today. */
+    @Column(name = "current_allocation_percentage", nullable = false)
+    private Integer currentAllocationPercentage;
+
+    /** What the replacement developer would be allocated. */
+    @Column(name = "simulated_allocation_percentage", nullable = false)
+    private Integer simulatedAllocationPercentage;
 
     @Column(name = "current_cost", nullable = false, precision = 14, scale = 2)
     private BigDecimal currentCost = BigDecimal.ZERO;
@@ -93,8 +98,11 @@ public class SimulationScenario {
     public Developer getNewDeveloper() { return newDeveloper; }
     public void setNewDeveloper(Developer newDeveloper) { this.newDeveloper = newDeveloper; }
 
-    public Integer getAllocationPercentage() { return allocationPercentage; }
-    public void setAllocationPercentage(Integer allocationPercentage) { this.allocationPercentage = allocationPercentage; }
+    public Integer getCurrentAllocationPercentage() { return currentAllocationPercentage; }
+    public void setCurrentAllocationPercentage(Integer currentAllocationPercentage) { this.currentAllocationPercentage = currentAllocationPercentage; }
+
+    public Integer getSimulatedAllocationPercentage() { return simulatedAllocationPercentage; }
+    public void setSimulatedAllocationPercentage(Integer simulatedAllocationPercentage) { this.simulatedAllocationPercentage = simulatedAllocationPercentage; }
 
     public BigDecimal getCurrentCost() { return currentCost; }
     public void setCurrentCost(BigDecimal currentCost) { this.currentCost = currentCost; }

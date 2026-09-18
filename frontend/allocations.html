@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Allocations - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">Resource Allocations</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="card no-print">
+        <h3 id="allocation-form-title">Allocate a developer</h3>
+        <form class="app-form" id="allocation-form">
+            <input type="hidden" id="allocation-id">
+            <div class="form-field"><label for="allocation-developer">Developer</label><select id="allocation-developer" required></select></div>
+            <div class="form-field"><label for="allocation-project">Project</label><select id="allocation-project" required></select></div>
+            <div class="form-field"><label for="allocation-milestone">Milestone</label><select id="allocation-milestone"></select></div>
+            <div class="form-field"><label for="allocation-start">Start date</label><input type="date" id="allocation-start" required></div>
+            <div class="form-field"><label for="allocation-end">End date</label><input type="date" id="allocation-end" required></div>
+            <div class="form-field"><label for="allocation-percentage">Allocation (%)</label><input type="number" id="allocation-percentage" min="1" max="100" value="50" required></div>
+            <div class="form-actions">
+                <button type="submit" id="allocation-submit">Save allocation</button>
+                <button type="button" class="secondary" id="allocation-reset">Clear form</button>
+            </div>
+        </form>
+        <div id="skill-preview"></div>
+    </div>
+
+    <div class="card">
+        <h3>All allocations</h3>
+        <div class="toolbar no-print">
+            <div class="form-field"><label for="filter-developer">Filter by developer</label><select id="filter-developer"></select></div>
+            <div class="form-field"><label for="filter-project">Filter by project</label><select id="filter-project"></select></div>
+            <button class="secondary" id="clear-filters">Clear filters</button>
+        </div>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Developer</th><th>Project</th><th>Milestone</th><th>From</th><th>To</th><th>Allocation</th><th>Actions</th></tr></thead>
+            <tbody id="allocation-body"></tbody>
+        </table></div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/allocations.js"></script>
+
+</body>
+</html>

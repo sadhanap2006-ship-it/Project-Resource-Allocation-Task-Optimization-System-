@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">My Dashboard</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="toolbar no-print">
+        <div class="form-field"><label for="developer-picker">Viewing as</label><select id="developer-picker"></select></div>
+    </div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="card-grid">
+        <div class="card">
+            <h3>My projects</h3>
+            <div id="my-projects"></div>
+        </div>
+
+        <div class="card">
+            <h3>My leave</h3>
+            <div id="my-leave"></div>
+        </div>
+
+        <div class="card">
+            <h3>My conflicts</h3>
+            <div id="my-conflicts"></div>
+        </div>
+
+        <div class="card">
+            <h3>Upcoming deadlines (next 30 days)</h3>
+            <div id="my-deadlines"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>My milestones</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Project</th><th>Milestone</th><th>Dates</th><th>Progress</th><th>Required skills</th><th>Status</th></tr></thead>
+            <tbody id="my-milestones"></tbody>
+        </table></div>
+    </div>
+
+    <div class="card">
+        <h3>My allocations</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Project</th><th>Milestone</th><th>From</th><th>To</th><th>Allocation</th></tr></thead>
+            <tbody id="my-allocations"></tbody>
+        </table></div>
+    </div>
+
+    <div class="card">
+        <h3>My notifications</h3>
+        <div id="my-notifications"></div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/developer-dashboard.js"></script>
+
+</body>
+</html>

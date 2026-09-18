@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developers - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">Developers</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="card no-print">
+        <h3 id="developer-form-title">Add a developer</h3>
+        <form class="app-form" id="developer-form">
+            <input type="hidden" id="developer-id">
+            <div class="form-field"><label for="developer-name">Name</label><input type="text" id="developer-name" required></div>
+            <div class="form-field"><label for="developer-email">Email</label><input type="email" id="developer-email" required></div>
+            <div class="form-field"><label for="developer-role">Role</label><input type="text" id="developer-role" placeholder="Backend Developer" required></div>
+            <div class="form-field"><label for="developer-cost">Hourly cost (Rs.)</label><input type="number" id="developer-cost" min="0" step="0.01" value="500" required></div>
+            <div class="form-field"><label for="developer-availability">Availability (%)</label><input type="number" id="developer-availability" min="0" max="100" value="100" required></div>
+            <div class="form-field"><label for="developer-status">Status</label>
+                <select id="developer-status">
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="ON_LEAVE">ON_LEAVE</option>
+                </select></div>
+            <div class="form-field full"><label for="developer-skills">Skills (comma separated)</label><input type="text" id="developer-skills" placeholder="Java, Spring Boot, MySQL"></div>
+            <div class="form-actions">
+                <button type="submit" id="developer-submit">Save developer</button>
+                <button type="button" class="secondary" id="developer-reset">Clear form</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Resource profiles</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Hourly cost</th><th>Availability</th><th>Skills</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="developer-body"></tbody>
+        </table></div>
+    </div>
+
+    <div class="card no-print">
+        <h3>Record planned leave</h3>
+        <form class="app-form" id="leave-form">
+            <div class="form-field"><label for="leave-developer">Developer</label><select id="leave-developer" required></select></div>
+            <div class="form-field"><label for="leave-start">From</label><input type="date" id="leave-start" required></div>
+            <div class="form-field"><label for="leave-end">To</label><input type="date" id="leave-end" required></div>
+            <div class="form-field"><label for="leave-reason">Reason</label><input type="text" id="leave-reason" placeholder="Family function"></div>
+            <div class="form-field"><label for="leave-status">Status</label>
+                <select id="leave-status">
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="PLANNED">PLANNED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                </select></div>
+            <div class="form-actions"><button type="submit">Save leave</button></div>
+        </form>
+        <p class="inline-note">During approved leave the effective availability is 0%, so any overlapping allocation becomes a LEAVE CONFLICT.</p>
+    </div>
+
+    <div class="card">
+        <h3>Leave register</h3>
+        <div class="table-scroll"><table class="data-table">
+            <thead><tr><th>Developer</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="leave-body"></tbody>
+        </table></div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/developers.js"></script>
+
+</body>
+</html>

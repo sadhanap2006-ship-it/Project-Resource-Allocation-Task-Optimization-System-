@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Manager Dashboard - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">Project Manager Dashboard</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="stat-grid" id="stat-grid"></div>
+
+    <div class="card-grid">
+        <div class="card wide">
+            <h3>Resource Utilization</h3>
+            <div class="table-scroll"><table class="data-table">
+                <thead><tr><th>Developer</th><th>Allocation</th><th style="width:34%">Load</th><th>Availability</th><th>Status</th></tr></thead>
+                <tbody id="utilization-body"></tbody>
+            </table></div>
+            <p class="inline-note">"Allocation" is the highest simultaneous allocation, so future double-bookings are visible today.</p>
+        </div>
+
+        <div class="card">
+            <h3>Budget Overview</h3>
+            <div id="budget-overview"></div>
+        </div>
+
+        <div class="card">
+            <h3>Conflicts</h3>
+            <div id="conflict-list"></div>
+        </div>
+
+        <div class="card">
+            <h3>Skill Gaps</h3>
+            <div id="skillgap-list"></div>
+        </div>
+
+        <div class="card wide">
+            <h3>Upcoming Milestones (next 30 days)</h3>
+            <div id="upcoming-list"></div>
+        </div>
+
+        <div class="card">
+            <h3>Notifications</h3>
+            <div class="toolbar no-print">
+                <button class="small secondary" id="refresh-notifications">Re-scan system</button>
+            </div>
+            <div id="notification-list"></div>
+        </div>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>

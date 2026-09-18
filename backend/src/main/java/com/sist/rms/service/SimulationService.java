@@ -237,7 +237,8 @@ public class SimulationService {
         scenario.setMilestone(milestoneRepository.findById(request.getMilestoneId()).get());
         scenario.setCurrentDeveloper(developerRepository.findById(request.getCurrentDeveloperId()).get());
         scenario.setNewDeveloper(developerRepository.findById(request.getNewDeveloperId()).get());
-        scenario.setAllocationPercentage(result.getSimulatedAllocationPercentage());
+        scenario.setCurrentAllocationPercentage(result.getCurrentAllocationPercentage());
+        scenario.setSimulatedAllocationPercentage(result.getSimulatedAllocationPercentage());
         scenario.setCurrentCost(result.getCurrentCost());
         scenario.setSimulatedCost(result.getSimulatedCost());
         scenario.setCurrentSkillMatch(result.getCurrentSkillMatch());
@@ -299,8 +300,8 @@ public class SimulationService {
         response.setNewDeveloperName(scenario.getNewDeveloper().getName());
         response.setCurrentHourlyCost(scenario.getCurrentDeveloper().getHourlyCost());
         response.setNewHourlyCost(scenario.getNewDeveloper().getHourlyCost());
-        response.setCurrentAllocationPercentage(scenario.getAllocationPercentage());
-        response.setSimulatedAllocationPercentage(scenario.getAllocationPercentage());
+        response.setCurrentAllocationPercentage(scenario.getCurrentAllocationPercentage());
+        response.setSimulatedAllocationPercentage(scenario.getSimulatedAllocationPercentage());
         response.setCurrentCost(scenario.getCurrentCost());
         response.setSimulatedCost(scenario.getSimulatedCost());
         response.setBudgetImpact(scenario.getBudgetImpact());
