@@ -107,6 +107,15 @@ java -jar target/resource-allocation-system-1.0.0.jar
 Spring Boot serves the pages in `frontend/` itself, so there is nothing else
 to start.
 
+### Letting somebody else open it
+
+`http://localhost:8080` only works on the machine running the application.
+To let an examiner reach it — either a temporary public link from your own
+laptop, or proper hosting — follow
+[`docs/deployment.md`](docs/deployment.md). Read its first section before
+you share any address: the API has no authentication until you switch the
+password gate on.
+
 ### Demo logins
 
 | Username | Password | Opens |
@@ -167,9 +176,12 @@ project-resource-allocation-system/
 │   ├── simulator.html  developer-dashboard.html  api.html
 │   ├── css/style.css
 │   └── js/api.js + one script per page
+├── Dockerfile                      used by hosting services (see docs/deployment.md)
 ├── database/
 │   ├── schema.sql                  13 tables
-│   └── sample-data.sql             demo data
+│   ├── sample-data.sql             demo data
+│   ├── schema-hosted.sql           same tables, for a managed MySQL
+│   └── sample-data-hosted.sql      same data, for a managed MySQL
 ├── docs/
 │   ├── architecture.md
 │   ├── database-design.md
@@ -362,6 +374,7 @@ already the default) and run the folders top to bottom.
 | [`docs/architecture.md`](docs/architecture.md) | Layers, request walk-through, the OpenPDF justification, security note |
 | [`docs/database-design.md`](docs/database-design.md) | ER diagram, relationships, normalisation, constraints, indexes |
 | [`docs/api-documentation.md`](docs/api-documentation.md) | Every endpoint with request and response examples |
+| [`docs/deployment.md`](docs/deployment.md) | How to let an examiner reach the site, and how to password-protect it first |
 
 For the Draw.io diagram, open <https://app.diagrams.net> and redraw the two
 ASCII diagrams — the layered architecture in `docs/architecture.md` §2 and
@@ -388,7 +401,10 @@ These are deliberate, so they can be stated plainly rather than discovered:
 
 * The login is a demo. Passwords are plain text, there is no session token,
   and the REST API itself is not protected — anyone who can reach port 8080
-  can call any endpoint.
+  can call any endpoint. That is fine on your own machine. **Before putting
+  the site on the public internet, set `ACCESS_USERNAME` and
+  `ACCESS_PASSWORD`**, which puts one shared password in front of the whole
+  site. See [`docs/deployment.md`](docs/deployment.md).
 * There is no pagination. With a few hundred rows that is fine; with tens of
   thousands the dashboard would slow down.
 * Conflict detection runs over all allocations in memory rather than in SQL.

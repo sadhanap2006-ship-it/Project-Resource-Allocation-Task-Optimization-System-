@@ -145,6 +145,13 @@ endpoint. That was left out on purpose to keep the project inside the agreed
 technology stack and small enough to explain. It is a known limitation, not
 an oversight.
 
+Because that limitation becomes a real danger the moment the site is public,
+`config/AccessGateFilter.java` adds an optional single shared password over
+the entire site, switched on with the `ACCESS_USERNAME` and
+`ACCESS_PASSWORD` environment variables and off by default. It is plain
+HTTP Basic authentication written with the Servlet API — no new dependency.
+See `docs/deployment.md`.
+
 ---
 
 ## 7. The one extra dependency: OpenPDF
