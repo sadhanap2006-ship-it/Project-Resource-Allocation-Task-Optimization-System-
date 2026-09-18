@@ -622,27 +622,38 @@ budget warning, and a clean successful allocation.
 
 ## 9. Development Phases
 
-| Phase | Work | Status |
+| Phase | Work | Status | Where it landed |
+|---|---|---|---|
+| 1 | Inspect project | done | section 0 of this file |
+| 2 | Architecture + this plan | done | this file |
+| 3 | MySQL schema + sample data | done | `database/schema.sql`, `database/sample-data.sql` |
+| 4 | Spring Boot skeleton, entities, repositories | done | `backend/src/main/java/com/sist/rms/{entity,repository}` |
+| 5 | Resource allocation logic | done | `AllocationService` |
+| 6 | Conflict detection | done | `ConflictService` |
+| 7 | Skill-gap detection | done | `SkillGapService` |
+| 8 | Leave / availability | done | `LeaveService`, used by `ConflictService` |
+| 9 | Budget calculation + forecast | done | `BudgetService` |
+| 10 | REST controllers | done | `backend/src/main/java/com/sist/rms/controller` |
+| 11 | HTML/CSS/JS frontend | done | `frontend/` |
+| 12 | Connect frontend with Fetch API | done | `frontend/js/api.js` |
+| 13 | Manager + developer dashboards | done | `DashboardService`, `dashboard.js`, `developer-dashboard.js` |
+| 14 | What-if simulator | done | `SimulationService`, `simulator.js` |
+| 15 | Notifications | done | `NotificationService` |
+| 16 | PDF report export | done | `ReportService` (OpenPDF) + browser print stylesheet |
+| 17 | Postman testing | done | `postman/` — 85 requests, all passing |
+| 18 | Bug fixing | done | see below |
+| 19 | README + architecture documentation | done | `README.md`, `docs/` |
+
+### Defects found while testing the running application, and fixed
+
+| # | Defect | Fix |
 |---|---|---|
-| 1 | Inspect project | done |
-| 2 | Architecture + this plan | done |
-| 3 | MySQL schema + sample data | |
-| 4 | Spring Boot skeleton, entities, repositories | |
-| 5 | Resource allocation logic | |
-| 6 | Conflict detection | |
-| 7 | Skill-gap detection | |
-| 8 | Leave / availability | |
-| 9 | Budget calculation + forecast | |
-| 10 | REST controllers | |
-| 11 | HTML/CSS/JS frontend | |
-| 12 | Connect frontend with Fetch API | |
-| 13 | Manager + developer dashboards | |
-| 14 | What-if simulator | |
-| 15 | Notifications | |
-| 16 | PDF report export | |
-| 17 | Postman testing | |
-| 18 | Bug fixing | |
-| 19 | README + architecture docs | |
+| 1 | The catch-all exception handler turned a missing static file into HTTP 500 | Added a handler for `NoResourceFoundException` so a missing page or asset returns 404 |
+| 2 | `BudgetResponse` exposed a `burnRatePerDay` field that was never populated | Removed it; the forecast response already carries the burn rate |
+| 3 | A saved simulation stored only one allocation percentage, so the PDF printed the simulated figure as the current one | `simulation_scenarios` now stores both `current_` and `simulated_allocation_percentage` |
+| 4 | A developer could not log in at all — `User.developer` was a lazy proxy read outside a transaction, giving HTTP 500 | Made the association `EAGER`, and did the same for `Notification.developer` to remove the same latent fault |
+| 5 | Two dashboard tables were clipped on a wide screen | Added a `.card.wide` grid rule and reduced the minimum bar width |
+| 6 | A developer saw the whole manager menu | Navigation is now role-based, and the "viewing as" picker is hidden for a signed-in developer |
 
 ---
 

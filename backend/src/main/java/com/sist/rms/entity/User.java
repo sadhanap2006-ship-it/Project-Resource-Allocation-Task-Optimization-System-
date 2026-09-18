@@ -24,7 +24,11 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    /* EAGER on purpose: whenever a user is loaded we immediately need the
+       linked developer to decide which dashboard to open. With LAZY the
+       developer would be an uninitialised proxy by the time the controller
+       reads it, and the login would fail. */
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "developer_id")
     private Developer developer;
 

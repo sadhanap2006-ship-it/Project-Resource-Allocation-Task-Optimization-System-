@@ -31,7 +31,7 @@ public class Notification {
 
     /** Set when the notification concerns one developer, so the
      *  developer dashboard can show only that developer's alerts. */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "developer_id")
     private Developer developer;
 

@@ -5,7 +5,8 @@
    ===================================================================== */
 
 document.addEventListener('DOMContentLoaded', async function () {
-    renderLayout('', 'My Dashboard', 'Your projects, milestones, capacity, leave and conflicts.');
+    renderLayout('developer-dashboard.html', 'My Dashboard',
+        'Your projects, milestones, capacity, leave and conflicts.');
 
     const picker = document.getElementById('developer-picker');
     picker.addEventListener('change', function () { loadDashboard(picker.value); });
@@ -14,13 +15,21 @@ document.addEventListener('DOMContentLoaded', async function () {
         const developers = await api.get('/api/developers');
         fillSelect('developer-picker', developers, 'id', function (d) { return d.name; }, '');
 
-        // open the signed-in developer's own dashboard when there is one
         const session = getSession();
-        const startId = (session && session.developerId) ? session.developerId
-                      : (developers.length ? developers[0].id : null);
-        if (startId) {
-            picker.value = startId;
-            await loadDashboard(startId);
+
+        // A signed-in developer sees only their own dashboard, so the picker
+        // is hidden. A manager opening this page can switch between people.
+        if (session && session.role === 'DEVELOPER' && session.developerId) {
+            const toolbar = picker.closest('.toolbar');
+            if (toolbar) { toolbar.style.display = 'none'; }
+            picker.value = session.developerId;
+            await loadDashboard(session.developerId);
+            return;
+        }
+
+        if (developers.length) {
+            picker.value = developers[0].id;
+            await loadDashboard(developers[0].id);
         }
     } catch (error) {
         showError('message-area', error);

@@ -1,0 +1,2145 @@
+{
+  "info": {
+    "name": "Project Resource Allocation System",
+    "description": "SIST CSE Capstone Project - REST API tests.\n\nBefore running:\n1. Load database/schema.sql and database/sample-data.sql into MySQL.\n2. Start the Spring Boot application (it listens on port 8080).\n\nEvery folder contains a successful request, an invalid request that must\nreturn HTTP 400, and a missing-record request that must return HTTP 404.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Login",
+      "description": "Decides which dashboard the browser opens.",
+      "item": [
+        {
+          "name": "Login as the project manager (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"manager\",\n  \"password\": \"manager123\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login as a developer (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"arun\",\n  \"password\": \"arun123\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Wrong password (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "Expect 400 with the message 'Invalid username or password'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"manager\",\n  \"password\": \"wrong\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Projects",
+      "description": "Project CRUD and validation.",
+      "item": [
+        {
+          "name": "Get all projects (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get project 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create a project (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Library Management System\",\n  \"description\": \"Book issue and return system for the college library.\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2027-02-28\",\n  \"budget\": 250000,\n  \"status\": \"PLANNED\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update project 1 (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hospital Management Portal\",\n  \"description\": \"Patient records, appointments and billing portal.\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-12-31\",\n  \"budget\": 500000,\n  \"status\": \"IN_PROGRESS\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - end date before start date (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            },
+            "description": "Expect 400: 'End date cannot be before start date'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad dates\",\n  \"startDate\": \"2026-05-10\",\n  \"endDate\": \"2026-05-01\",\n  \"budget\": 1000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - negative budget (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            },
+            "description": "Expect 400: 'Budget cannot be negative'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad budget\",\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-05-10\",\n  \"budget\": -5000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - empty name (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ]
+            },
+            "description": "Expect 400: 'Project name is required'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"startDate\": \"2026-05-01\",\n  \"endDate\": \"2026-05-10\",\n  \"budget\": 1000\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - project 999 (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "999"
+              ]
+            },
+            "description": "Expect 404: 'Project not found with id 999'."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a project (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "4"
+              ]
+            },
+            "description": "Deletes the project created above. Change the id if needed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Developers",
+      "description": "Resource profiles, their skills and validation.",
+      "item": [
+        {
+          "name": "Get all developers (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get developer 1 - Arun (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "1"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create a developer (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Meena\",\n  \"email\": \"meena@sist.edu\",\n  \"role\": \"QA Engineer\",\n  \"hourlyCost\": 400,\n  \"availabilityPercentage\": 100,\n  \"status\": \"ACTIVE\",\n  \"skills\": [\n    \"Selenium\",\n    \"Java\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update developer 1 (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "1"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Arun\",\n  \"email\": \"arun@sist.edu\",\n  \"role\": \"Senior Backend Developer\",\n  \"hourlyCost\": 550,\n  \"availabilityPercentage\": 100,\n  \"status\": \"ACTIVE\",\n  \"skills\": [\n    \"Java\",\n    \"Spring Boot\",\n    \"MySQL\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add a skill to developer 1 (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "1",
+                "skills"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skillName\": \"Docker\",\n  \"proficiencyLevel\": \"BEGINNER\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Developer 1 allocations (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "1",
+                "allocations"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Developer 1 dashboard (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "1",
+                "dashboard"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - negative hourly cost (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers"
+              ]
+            },
+            "description": "Expect 400: 'Hourly cost cannot be negative'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad cost\",\n  \"email\": \"badcost@sist.edu\",\n  \"role\": \"Dev\",\n  \"hourlyCost\": -100,\n  \"availabilityPercentage\": 100\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - bad email (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers"
+              ]
+            },
+            "description": "Expect 400: 'Email must be a valid email address'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad email\",\n  \"email\": \"not-an-email\",\n  \"role\": \"Dev\",\n  \"hourlyCost\": 100,\n  \"availabilityPercentage\": 100\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - duplicate email (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers"
+              ]
+            },
+            "description": "Expect 400: 'A developer with this email already exists'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Copy of Arun\",\n  \"email\": \"arun@sist.edu\",\n  \"role\": \"Dev\",\n  \"hourlyCost\": 100,\n  \"availabilityPercentage\": 100\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - developer 999 (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "developers",
+                "999"
+              ]
+            },
+            "description": "Expect 404: 'Developer not found with id 999'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Skills",
+      "description": "The master skill list.",
+      "item": [
+        {
+          "name": "Get all skills (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create a skill (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kotlin\",\n  \"category\": \"Backend\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - duplicate skill (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills"
+              ]
+            },
+            "description": "Expect 400: a skill named 'Java' already exists.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Java\",\n  \"category\": \"Backend\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - empty skill name (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills"
+              ]
+            },
+            "description": "Expect 400: 'Skill name is required'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"category\": \"Backend\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Milestones",
+      "description": "Milestones and their required skills.",
+      "item": [
+        {
+          "name": "Get all milestones (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get milestones of project 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones?projectId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get milestone 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones",
+                "1"
+              ]
+            },
+            "description": "Note estimatedDeliveryDate: start + ceil(effort / capacity) - 1."
+          },
+          "response": []
+        },
+        {
+          "name": "Create a milestone (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"name\": \"User Acceptance Testing\",\n  \"description\": \"Hospital staff test the portal.\",\n  \"startDate\": \"2026-12-01\",\n  \"endDate\": \"2026-12-20\",\n  \"progressPercentage\": 0,\n  \"status\": \"PLANNED\",\n  \"estimatedEffortDays\": 12,\n  \"requiredSkills\": [\n    \"Java\",\n    \"MySQL\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update milestone 1 (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones",
+                "1"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"name\": \"Backend API Development\",\n  \"description\": \"REST APIs for patients, doctors and billing.\",\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-30\",\n  \"progressPercentage\": 55,\n  \"status\": \"IN_PROGRESS\",\n  \"estimatedEffortDays\": 20,\n  \"requiredSkills\": [\n    \"Java\",\n    \"Spring Boot\",\n    \"MySQL\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add a required skill to milestone 1 (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones/1/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones",
+                "1",
+                "skills"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skillName\": \"REST\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - milestone outside its project dates (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones"
+              ]
+            },
+            "description": "Expect 400: the milestone cannot start before its project starts.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"name\": \"Too early\",\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"estimatedEffortDays\": 5\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - effort of zero days (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones"
+              ]
+            },
+            "description": "Expect 400: effort must be at least 1 developer-day.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"name\": \"No effort\",\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2026-10-10\",\n  \"estimatedEffortDays\": 0\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - milestone 999 (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "milestones",
+                "999"
+              ]
+            },
+            "description": "Expect 404: 'Milestone not found with id 999'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Allocations",
+      "description": "Allocation CRUD. A successful save may still return a 'warnings' list when it creates a skill gap or a conflict.",
+      "item": [
+        {
+          "name": "Get all allocations (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get allocations of developer 3 - Rahul (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations?developerId=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ],
+              "query": [
+                {
+                  "key": "developerId",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create a clean allocation (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Karthik has Java and Spring Boot, so this should save with no warnings.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 5,\n  \"projectId\": 1,\n  \"milestoneId\": 1,\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-30\",\n  \"allocationPercentage\": 20\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create an allocation that RAISES A SKILL GAP (201 + warnings)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Priya has no backend skills. The allocation is saved, but the response carries a SKILL GAP warning - the assignment is never silent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 2,\n  \"projectId\": 1,\n  \"milestoneId\": 1,\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-30\",\n  \"allocationPercentage\": 10\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - allocation of 150% (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Expect 400: 'Allocation percentage must be between 1 and 100'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 1,\n  \"projectId\": 1,\n  \"milestoneId\": 1,\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-10\",\n  \"allocationPercentage\": 150\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - dates outside the project (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Expect 400: allocation dates must be inside the project dates.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 1,\n  \"projectId\": 1,\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-02-01\",\n  \"allocationPercentage\": 50\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - unknown developer (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Expect 404: 'Developer not found with id 999'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 999,\n  \"projectId\": 1,\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2026-09-10\",\n  \"allocationPercentage\": 50\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete an allocation (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/8",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations",
+                "8"
+              ]
+            },
+            "description": "Deletes one of the allocations created above. Change the id if needed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Leave",
+      "description": "Planned leave, which drives the LEAVE CONFLICT rule.",
+      "item": [
+        {
+          "name": "Get all leave (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leaves"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get leave of developer 2 - Priya (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/leaves?developerId=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leaves"
+              ],
+              "query": [
+                {
+                  "key": "developerId",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Record leave (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leaves"
+              ]
+            },
+            "description": "Rahul is allocated on these dates, so /api/conflicts will now report an extra LEAVE CONFLICT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 3,\n  \"startDate\": \"2026-09-20\",\n  \"endDate\": \"2026-09-25\",\n  \"reason\": \"Wedding\",\n  \"status\": \"APPROVED\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - leave end before start (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leaves"
+              ]
+            },
+            "description": "Expect 400: 'Leave end date cannot be before leave start date'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 1,\n  \"startDate\": \"2026-09-20\",\n  \"endDate\": \"2026-09-10\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - unknown developer (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/leaves",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "leaves"
+              ]
+            },
+            "description": "Expect 404: 'Developer not found with id 999'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 999,\n  \"startDate\": \"2026-09-10\",\n  \"endDate\": \"2026-09-14\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Conflicts, skill gaps and utilization",
+      "description": "The detection rules. With the shipped sample data these return one over-allocation, one leave conflict and two skill gaps.",
+      "item": [
+        {
+          "name": "Get all conflicts (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/conflicts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conflicts"
+              ]
+            },
+            "description": "CASE 1: Rahul reaches 110% between 15 Sep and 15 Oct 2026.\nCASE 3: Divya's September and November work does NOT overlap, so it raises nothing.\nCASE 5: Priya is 80% allocated during her leave 10-14 Sep 2026."
+          },
+          "response": []
+        },
+        {
+          "name": "Conflicts of developer 3 - Rahul (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/conflicts?developerId=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conflicts"
+              ],
+              "query": [
+                {
+                  "key": "developerId",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Conflicts of developer 1 - Arun, expect none (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/conflicts?developerId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conflicts"
+              ],
+              "query": [
+                {
+                  "key": "developerId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "CASE 2 style: Arun is at 60%, inside his availability, so the list comes back empty."
+          },
+          "response": []
+        },
+        {
+          "name": "Get skill gaps (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/skill-gaps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skill-gaps"
+              ]
+            },
+            "description": "CASE 4: 'Cloud Deployment' needs Azure and nobody has it, so the suggestion is 'Skill Gap: No available developer has this skill.'"
+          },
+          "response": []
+        },
+        {
+          "name": "Get the utilization table (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/utilization",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "utilization"
+              ]
+            },
+            "description": "Arun 60% Available, Priya 80% High Load, Rahul 110% Conflict."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Budget and forecast",
+      "description": "Budget maths, the burn-rate forecast and the guards.",
+      "item": [
+        {
+          "name": "Budget of project 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/budget",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1",
+                "budget"
+              ]
+            },
+            "description": "500,000 budget, 300,000 spent -> 60% utilization."
+          },
+          "response": []
+        },
+        {
+          "name": "FORECAST of project 1 - CASE 6 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/budget/forecast",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1",
+                "budget",
+                "forecast"
+              ]
+            },
+            "description": "CASE 6: remaining 200,000 at a burn rate of 10,000 per day gives 'approximately 20 days'."
+          },
+          "response": []
+        },
+        {
+          "name": "Budget of project 2 - budget warning (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/2/budget",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "2",
+                "budget"
+              ]
+            },
+            "description": "90% used -> warningLevel CRITICAL."
+          },
+          "response": []
+        },
+        {
+          "name": "Budget of project 3 - NO SPENDING DATA (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/3/budget",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "3",
+                "budget"
+              ]
+            },
+            "description": "Nothing spent, so no division happens and the message is 'No spending data available'."
+          },
+          "response": []
+        },
+        {
+          "name": "Forecast of project 3 - no spending (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/3/budget/forecast",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "3",
+                "budget",
+                "forecast"
+              ]
+            },
+            "description": "Also returns 'No spending data available' instead of dividing by zero."
+          },
+          "response": []
+        },
+        {
+          "name": "Spending entries of project 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/budget/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1",
+                "budget",
+                "transactions"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Record spending (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/budget/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1",
+                "budget",
+                "transactions"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionDate\": \"2026-09-18\",\n  \"amount\": 25000,\n  \"category\": \"Salary\",\n  \"description\": \"Extra sprint\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - amount of zero (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/budget/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1",
+                "budget",
+                "transactions"
+              ]
+            },
+            "description": "Expect 400: 'Amount must be greater than zero'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionDate\": \"2026-09-18\",\n  \"amount\": 0,\n  \"category\": \"Salary\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - budget of project 999 (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/999/budget",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "999",
+                "budget"
+              ]
+            },
+            "description": "Expect 404: 'Project not found with id 999'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Notifications",
+      "description": "The in-app alert list.",
+      "item": [
+        {
+          "name": "Get all notifications (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Re-scan the system (200)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "refresh"
+              ]
+            },
+            "description": "Regenerates alerts for over-allocation, leave conflicts, skill gaps, budget risks, delays and approaching deadlines. Running it twice does not create duplicates."
+          },
+          "response": []
+        },
+        {
+          "name": "Unread count (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Mark notification 1 as read (200)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/1/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "1",
+                "read"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Notifications for developer 3 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?developerId=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "developerId",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - notification 999 (404)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/999/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "999",
+                "read"
+              ]
+            },
+            "description": "Expect 404: 'Notification not found with id 999'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Simulations",
+      "description": "The what-if simulator. RUN never writes to the database; only SAVE does.",
+      "item": [
+        {
+          "name": "RUN a simulation - nothing is saved (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "run"
+              ]
+            },
+            "description": "Replaces Rahul with Karthik on Frontend Development.\nAfterwards, GET /api/simulations still returns an empty list, which proves the run wrote nothing.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milestoneId\": 2,\n  \"currentDeveloperId\": 3,\n  \"newDeveloperId\": 5,\n  \"newAllocationPercentage\": 60\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check that RUN saved nothing (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations"
+              ]
+            },
+            "description": "Should still be empty if you have not saved a scenario yet."
+          },
+          "response": []
+        },
+        {
+          "name": "SAVE the scenario (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations"
+              ]
+            },
+            "description": "Only this call writes a row into simulation_scenarios.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scenarioName\": \"Replace Rahul with Divya on Frontend\",\n  \"milestoneId\": 2,\n  \"currentDeveloperId\": 3,\n  \"newDeveloperId\": 4,\n  \"newAllocationPercentage\": 50\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get the saved scenarios (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get saved scenario 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "1"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Download the PDF report (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/1/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "1",
+                "report"
+              ]
+            },
+            "description": "Returns application/pdf. Use 'Send and Download' in Postman."
+          },
+          "response": []
+        },
+        {
+          "name": "PDF for an UNSAVED scenario (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "report"
+              ]
+            },
+            "description": "Builds the report without storing anything.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scenarioName\": \"Draft only\",\n  \"milestoneId\": 2,\n  \"currentDeveloperId\": 3,\n  \"newDeveloperId\": 5\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - swapping a developer with themselves (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "run"
+              ]
+            },
+            "description": "Expect 400: the replacement must be a different developer.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milestoneId\": 2,\n  \"currentDeveloperId\": 3,\n  \"newDeveloperId\": 3\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INVALID - developer not on that milestone (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "run"
+              ]
+            },
+            "description": "Expect 400: 'Arun is not allocated to the milestone Frontend Development'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milestoneId\": 2,\n  \"currentDeveloperId\": 1,\n  \"newDeveloperId\": 4\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - milestone 999 (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "run"
+              ]
+            },
+            "description": "Expect 404: 'Milestone not found with id 999'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milestoneId\": 999,\n  \"currentDeveloperId\": 3,\n  \"newDeveloperId\": 4\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete saved scenario 1 (204)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulations",
+                "1"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Dashboards and timeline",
+      "description": "One call per screen.",
+      "item": [
+        {
+          "name": "Project Manager dashboard (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "summary"
+              ]
+            },
+            "description": "Everything the manager dashboard draws, in one response."
+          },
+          "response": []
+        },
+        {
+          "name": "Developer dashboard - Rahul (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/developer/3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "developer",
+                "3"
+              ]
+            },
+            "description": "The simpler developer view, including his conflicts."
+          },
+          "response": []
+        },
+        {
+          "name": "Full timeline (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/timeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timeline"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Timeline of project 1 (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/timeline",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "1",
+                "timeline"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "MISSING - dashboard of developer 999 (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/developer/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "developer",
+                "999"
+              ]
+            },
+            "description": "Expect 404: 'Developer not found with id 999'."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

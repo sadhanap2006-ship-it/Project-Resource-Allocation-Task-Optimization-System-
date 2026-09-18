@@ -127,7 +127,11 @@ function daysBetween(fromIso, toIso) {
    3. Page furniture
    ------------------------------------------------------------------ */
 
-const NAV_LINKS = [
+/* Role-based navigation.
+   A Project Manager gets the full menu. A Developer gets only their own
+   dashboard and the timeline, because the other screens are management
+   tools they are not meant to use. */
+const MANAGER_NAV = [
     { href: 'dashboard.html',   label: 'Dashboard' },
     { href: 'projects.html',    label: 'Projects' },
     { href: 'developers.html',  label: 'Developers' },
@@ -138,9 +142,15 @@ const NAV_LINKS = [
     { href: 'simulator.html',   label: 'What-If Simulator' }
 ];
 
+const DEVELOPER_NAV = [
+    { href: 'developer-dashboard.html', label: 'My Dashboard' },
+    { href: 'timeline.html',            label: 'Timeline' }
+];
+
 /** Draws the header and the navigation bar into the current page. */
 function renderLayout(activePage, title, hint) {
     const session = getSession();
+    const NAV_LINKS = (session && session.role === 'DEVELOPER') ? DEVELOPER_NAV : MANAGER_NAV;
     const header = document.getElementById('app-header');
     if (header) {
         header.innerHTML =
