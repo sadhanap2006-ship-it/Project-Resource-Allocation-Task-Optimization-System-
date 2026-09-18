@@ -92,6 +92,7 @@ project-resource-allocation-system/
 │   ├── index.html  dashboard.html  projects.html  developers.html
 │   ├── allocations.html  conflicts.html  simulator.html
 │   ├── timeline.html  budget.html  developer-dashboard.html
+│   ├── api.html
 │   ├── css/style.css
 │   └── js/api.js  dashboard.js  projects.js  developers.js
 │           allocations.js  conflicts.js  simulator.js
@@ -582,6 +583,7 @@ specification explicitly allows adjusting endpoint names.
 | `timeline.html` | Project → milestone timeline bars |
 | `simulator.html` | What-if resource swap + Save + PDF export |
 | `developer-dashboard.html` | The simpler developer view |
+| `api.html` | REST API explorer — send any endpoint from the browser |
 
 Shared JavaScript:
 * `js/api.js` — one tiny wrapper around `fetch()` plus shared helpers

@@ -139,7 +139,8 @@ const MANAGER_NAV = [
     { href: 'conflicts.html',   label: 'Conflicts' },
     { href: 'budget.html',      label: 'Budget' },
     { href: 'timeline.html',    label: 'Timeline' },
-    { href: 'simulator.html',   label: 'What-If Simulator' }
+    { href: 'simulator.html',   label: 'What-If Simulator' },
+    { href: 'api.html',         label: 'API Explorer' }
 ];
 
 const DEVELOPER_NAV = [

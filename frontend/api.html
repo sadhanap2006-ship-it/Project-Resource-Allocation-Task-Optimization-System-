@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REST API Explorer - Project Resource Allocation System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header" id="app-header"></header>
+<nav class="app-nav" id="app-nav"></nav>
+
+<main>
+    <h2 class="page-title" id="page-title">REST API Explorer</h2>
+    <p class="page-hint" id="page-hint"></p>
+    <div id="message-area"></div>
+
+    <div class="explorer">
+
+        <!-- the list of endpoints -->
+        <div class="card">
+            <h3>Endpoints</h3>
+            <div class="form-field" style="margin-bottom:10px">
+                <input type="text" id="endpoint-search" placeholder="Search, e.g. budget or conflicts">
+            </div>
+            <p class="inline-note" id="endpoint-count"></p>
+            <div class="endpoint-list" id="endpoint-list"></div>
+        </div>
+
+        <!-- the request and the response -->
+        <div>
+            <div class="card">
+                <h3>Request</h3>
+                <div class="request-line" id="request-line"></div>
+                <div id="expects-note"></div>
+
+                <div id="body-section">
+                    <label for="body-editor">Request body (JSON)</label>
+                    <textarea class="body-editor" id="body-editor" spellcheck="false"></textarea>
+                </div>
+
+                <div class="form-actions" style="margin-top:12px">
+                    <button type="button" id="send-button">Send</button>
+                    <button type="button" class="secondary" id="reset-body">Reset to the sample</button>
+                </div>
+
+                <label style="margin-top:14px;display:block">The same request as a terminal command</label>
+                <pre class="curl-line" id="curl-line"></pre>
+            </div>
+
+            <div class="card">
+                <h3>Response</h3>
+                <div id="response-panel"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card">
+        <h3>How to use this page in your viva</h3>
+        <ol style="margin:0;padding-left:20px;line-height:1.9">
+            <li>Pick an endpoint on the left. The green, blue, amber and red tags are the HTTP methods
+                GET, POST, PUT and DELETE.</li>
+            <li>Any <code>{id}</code> in the URL becomes a small box you can type into.</li>
+            <li>For POST and PUT a sample JSON body is filled in for you. Edit it freely, or press
+                <em>Reset to the sample</em> to put it back.</li>
+            <li>Press <strong>Send</strong>. The reply shows the HTTP status code, how long the call
+                took, and the response body.</li>
+            <li>The requests whose names start with <strong>INVALID</strong> or <strong>MISSING</strong>
+                are meant to fail. They demonstrate the validation rules and the 400 and 404 handling.</li>
+        </ol>
+        <p class="inline-note" style="margin-top:12px">
+            This page calls exactly the same REST API that every other screen uses, and the same one the
+            Postman collection in <code>postman/</code> tests. Nothing here is a mock.
+        </p>
+    </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/api-explorer.js"></script>
+
+</body>
+</html>

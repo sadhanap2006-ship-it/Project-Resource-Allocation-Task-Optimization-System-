@@ -4,8 +4,14 @@
 **Content type:** `application/json` (except the PDF report, which is `application/pdf`)
 **Dates:** always `yyyy-MM-dd`, for example `2026-09-18`
 
-A ready-made Postman collection covering every endpoint below is in
-`postman/Project-Resource-Allocation-System.postman_collection.json`.
+There are two ways to try these endpoints:
+
+* **In the browser** — start the application and open
+  <http://localhost:8080/api.html> (or the **API Explorer** item in the menu).
+  Every endpoint below is listed there and can be sent with one click, with
+  the JSON body prefilled and editable.
+* **In Postman** — import
+  `postman/Project-Resource-Allocation-System.postman_collection.json`.
 
 ---
 

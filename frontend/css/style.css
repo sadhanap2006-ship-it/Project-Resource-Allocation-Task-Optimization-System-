@@ -431,3 +431,178 @@ table.compare-table tr:nth-child(even) td { background: #f7f9fc; }
     .timeline-row { grid-template-columns: 1fr; }
     main { padding: 14px; }
 }
+
+/* ---------------------------------------------------------------------
+   API EXPLORER  (api.html)
+   A two-column layout: the endpoint list on the left, the request and
+   response on the right.
+   ------------------------------------------------------------------ */
+
+.explorer {
+    display: grid;
+    grid-template-columns: 330px 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+.endpoint-list { max-height: 78vh; overflow-y: auto; }
+
+.endpoint-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    margin: 14px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+}
+.endpoint-group-title:first-child { margin-top: 0; }
+
+.endpoint-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 5px;
+    padding: 6px 8px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+}
+.endpoint-item:hover    { background: #eaf2fb; }
+.endpoint-item.selected { background: #dce9f7; font-weight: 600; }
+
+.endpoint-item .endpoint-label { flex: 1; line-height: 1.3; }
+
+/* HTTP method badges, coloured by what the method does */
+.method {
+    display: inline-block;
+    min-width: 54px;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: "Consolas", "Courier New", monospace;
+    color: #fff;
+    flex-shrink: 0;
+}
+.method.GET    { background: #1e8e4e; }
+.method.POST   { background: #2e86de; }
+.method.PUT    { background: #b06f00; }
+.method.DELETE { background: #c0392b; }
+
+/* the request line */
+.request-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 14px;
+    background: #f4f7fa;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 9px 11px;
+    margin-bottom: 12px;
+    word-break: break-all;
+}
+
+/* the URL itself must read as one string, so no gap between its pieces */
+.url-parts {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    word-break: break-all;
+}
+
+.param-input {
+    width: 72px;
+    margin: 0 1px;
+    padding: 2px 6px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 13px;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+}
+
+textarea.body-editor {
+    width: 100%;
+    min-height: 170px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+}
+
+/* the response */
+.status-pill {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: "Consolas", "Courier New", monospace;
+    color: #fff;
+}
+.status-pill.s2xx { background: var(--ok); }
+.status-pill.s4xx { background: var(--warn); }
+.status-pill.s5xx { background: var(--danger); }
+.status-pill.serr { background: #61707d; }
+
+pre.response-body {
+    background: #1f2933;
+    color: #e6edf3;
+    border-radius: 6px;
+    padding: 13px 15px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    max-height: 430px;
+    overflow: auto;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.response-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+pre.curl-line {
+    background: #f4f7fa;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 9px 11px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.expects-note {
+    font-size: 13px;
+    background: var(--info-bg);
+    border-left: 4px solid var(--info);
+    border-radius: 0 5px 5px 0;
+    padding: 8px 11px;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 900px) {
+    .explorer { grid-template-columns: 1fr; }
+    .endpoint-list { max-height: 320px; }
+}

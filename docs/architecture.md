@@ -120,7 +120,9 @@ What happens when the manager presses **Save allocation**:
   date and rupee formatters, `escapeHtml()`, the navigation bar and the
   shared drawing helpers (`barHtml`, `statusBadge`, `skillChips`).
 * Each page has exactly one matching script: `dashboard.html` →
-  `js/dashboard.js`. That script waits for `DOMContentLoaded`, calls the API
+  `js/dashboard.js`. `api.html` → `js/api-explorer.js` holds a catalogue of
+  every endpoint and sends the requests with `fetch()`, so the REST API can
+  be demonstrated without installing Postman. That script waits for `DOMContentLoaded`, calls the API
   and writes HTML into the containers.
 * The two dashboards each call a **single** endpoint
   (`/api/dashboard/summary` and `/api/dashboard/developer/{id}`) so one page
@@ -186,5 +188,6 @@ that reads like ordinary Java, so it is far easier to explain.
 | "How do you find skill gaps?" | `service/SkillGapService.java` |
 | "How does the simulator avoid changing data?" | `service/SimulationService.java` (`run()` never calls `save()`) |
 | "How does the browser talk to the server?" | `frontend/js/api.js` |
+| "Show me the REST API working" | the **API Explorer** page, `frontend/api.html` |
 | "Where are the tables defined?" | `database/schema.sql` |
 | "How do you know it works?" | `backend/src/test/java/.../ConflictServiceTest.java` |

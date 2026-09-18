@@ -54,6 +54,7 @@ export. It is explained — including how to do without it — in
 14. What-if resource swap simulation
 15. Role-based dashboards (manager and developer)
 16. PDF report export
+17. A built-in REST API explorer page, so the API can be demonstrated in the browser
 
 ---
 
@@ -137,6 +138,7 @@ Log in as `manager` and the dashboard already demonstrates every rule:
 | **No spending data guard** — College ERP has no spending | Budget, third row |
 | **A clean allocation** — Arun at 60%, full skill match, no conflict | Allocations |
 | **Non-overlapping work is fine** — Divya works Sept and late Oct | Conflicts (she does not appear) |
+| **The REST API itself**, endpoint by endpoint | API Explorer |
 
 ---
 
@@ -162,7 +164,7 @@ project-resource-allocation-system/
 ├── frontend/
 │   ├── index.html  dashboard.html  projects.html  developers.html
 │   ├── allocations.html  conflicts.html  budget.html  timeline.html
-│   ├── simulator.html  developer-dashboard.html
+│   ├── simulator.html  developer-dashboard.html  api.html
 │   ├── css/style.css
 │   └── js/api.js + one script per page
 ├── database/
@@ -326,12 +328,26 @@ mvn test
 | `CostServiceTest` | Working days, hours, cost |
 | `UtilizationServiceTest` | Available / High Load / Fully Allocated / Conflict |
 
-### API tests
+### API tests — two ways
 
-Import `postman/Project-Resource-Allocation-System.postman_collection.json`
-into Postman. It has **85 requests in 12 folders**, and each folder contains a
-successful request, an invalid request that must return 400, and a
-missing-record request that must return 404.
+**1. In the browser (no extra software).** Sign in as the manager and open
+**API Explorer** in the menu, or go straight to
+<http://localhost:8080/api.html>.
+
+The page lists all 65 sample requests grouped by area. Pick one, fill in any
+`{id}`, edit the JSON body, press **Send**, and read the real status code,
+the response time and the response body. It also prints the same call as a
+`curl` command you can paste into a terminal.
+
+Requests named **INVALID** or **MISSING** are meant to fail — they
+demonstrate the validation rules and the 400/404 handling. This page calls
+exactly the same REST API as every other screen; nothing is mocked.
+
+**2. In Postman.** Import
+`postman/Project-Resource-Allocation-System.postman_collection.json`. It has
+**85 requests in 12 folders**, and each folder contains a successful request,
+an invalid request that must return 400, and a missing-record request that
+must return 404.
 
 Set the collection variable `baseUrl` to `http://localhost:8080` (it is
 already the default) and run the folders top to bottom.
