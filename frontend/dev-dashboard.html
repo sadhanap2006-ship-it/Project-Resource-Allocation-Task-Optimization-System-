@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Workspace - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1 id="dev-greeting">Developer Workspace</h1>
+          <p>Personal task allocations, workload streaks, milestones, and leave status</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-request-leave" class="btn btn-primary">+ Request Leave</button>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="dashboard-content" style="display: none;">
+        <!-- KPI Cards -->
+        <div class="grid-kpi">
+          <div class="kpi-card">
+            <span class="kpi-label">Current Workload</span>
+            <div class="kpi-value" id="kpi-load">-</div>
+            <div class="kpi-subtext" id="kpi-load-sub">Active today</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Peak Load (Next 30d)</span>
+            <div class="kpi-value" id="kpi-peak">-</div>
+            <div class="kpi-subtext" id="kpi-peak-sub">Max concurrent commitments</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Remaining Capacity</span>
+            <div class="kpi-value" id="kpi-remaining">-</div>
+            <div class="kpi-subtext">Available bandwidth</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Open Conflicts</span>
+            <div class="kpi-value" id="kpi-conflicts">-</div>
+            <div class="kpi-subtext" id="kpi-conflicts-sub">Issues requiring resolution</div>
+          </div>
+        </div>
+
+        <!-- Weekly Load 8-Weeks Chart -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <h3 class="card-title">8-Week Projected Workload & Burnout Monitoring</h3>
+            <span class="badge badge-neutral">Sustained >85% for 3+ weeks triggers burnout alert</span>
+          </div>
+          <div style="height: 240px; position: relative;">
+            <canvas id="weeklyLoadChart"></canvas>
+          </div>
+        </div>
+
+        <div class="grid-two-col">
+          <!-- My Active Allocations & Milestones -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Assigned Milestones & Progress</h3>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Milestone</th>
+                    <th>Project</th>
+                    <th>Deadline</th>
+                    <th>Progress</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="milestones-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- My Leave Requests -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Leave History & Requests</h3>
+              <a href="/leave.html" class="btn btn-secondary btn-sm">Full Leave Grid</a>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Dates</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="leave-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conflicts Involving Me -->
+        <div class="card" style="margin-top: 1.5rem;" id="conflicts-card">
+          <div class="card-header">
+            <h3 class="card-title">Active Schedule Conflicts</h3>
+          </div>
+          <div id="conflicts-container" style="display:flex; flex-direction:column; gap:0.75rem;">
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    const user = await requireAuth(['DEVELOPER', 'PM', 'ADMIN']);
+    let loadChart = null;
+
+    async function loadDeveloperDashboard() {
+      const loadState = document.getElementById('loading-state');
+      const content = document.getElementById('dashboard-content');
+      ui.renderLoading(loadState, 'Loading personal allocations and workload profile...');
+
+      try {
+        const data = await api.get('/dashboard/developer/me');
+        loadState.style.display = 'none';
+        content.style.display = 'block';
+
+        document.getElementById('dev-greeting').innerText = `${data.resourceName} · Workspace`;
+
+        // 1. KPI Cards
+        document.getElementById('kpi-load').innerText = `${data.currentLoadPct}%`;
+        document.getElementById('kpi-load').style.color = data.currentLoadPct > 100 ? 'var(--danger)' : data.currentLoadPct > 85 ? 'var(--warning)' : 'var(--text-main)';
+
+        document.getElementById('kpi-peak').innerText = `${data.peakLoad30DaysPct}%`;
+        document.getElementById('kpi-peak').style.color = data.peakLoad30DaysPct > 100 ? 'var(--danger)' : data.peakLoad30DaysPct > 85 ? 'var(--warning)' : 'var(--text-main)';
+
+        document.getElementById('kpi-remaining').innerText = `${data.remainingCapacityPct}%`;
+        document.getElementById('kpi-remaining').style.color = data.remainingCapacityPct < 0 ? 'var(--danger)' : 'var(--success)';
+
+        document.getElementById('kpi-conflicts').innerText = data.openConflicts.length;
+        document.getElementById('kpi-conflicts').style.color = data.openConflicts.length > 0 ? 'var(--danger)' : 'var(--text-main)';
+
+        // 2. Chart.js Weekly Load
+        renderWeeklyChart(data.weeklyLoad8Weeks);
+
+        // 3. Milestones table
+        const mBody = document.getElementById('milestones-table-body');
+        if (!data.milestones || data.milestones.length === 0) {
+          mBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No milestones currently assigned.</td></tr>';
+        } else {
+          mBody.innerHTML = data.milestones.map(m => `
+            <tr>
+              <td><strong>${ui.escapeHtml(m.name)}</strong></td>
+              <td><span style="color:var(--text-muted);">${ui.escapeHtml(m.projectName)}</span></td>
+              <td>${ui.formatDate(m.endDate)}</td>
+              <td>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <div style="flex:1; background:var(--bg-surface); border-radius:4px; height:8px; overflow:hidden; min-width:60px;">
+                    <div style="background:var(--primary); width:${m.progressPct}%; height:100%;"></div>
+                  </div>
+                  <span style="font-size:0.8rem; font-weight:600;">${m.progressPct}%</span>
+                </div>
+              </td>
+              <td>
+                <button class="btn btn-secondary btn-sm btn-update-progress" data-id="${m.id}" data-name="${ui.escapeHtml(m.name)}" data-progress="${m.progressPct}">
+                  Update
+                </button>
+              </td>
+            </tr>
+          `).join('');
+
+          document.querySelectorAll('.btn-update-progress').forEach(btn => {
+            btn.onclick = () => openProgressModal(btn.dataset.id, btn.dataset.name, btn.dataset.progress);
+          });
+        }
+
+        // 4. Leave History
+        const lBody = document.getElementById('leave-table-body');
+        if (!data.leaveRequests || data.leaveRequests.length === 0) {
+          lBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No leave requests recorded.</td></tr>';
+        } else {
+          lBody.innerHTML = data.leaveRequests.map(l => {
+            const badgeClass = l.status === 'APPROVED' ? 'badge-green' : l.status === 'REJECTED' ? 'badge-red' : 'badge-amber';
+            return `
+              <tr>
+                <td>${ui.formatDate(l.startDate)} → ${ui.formatDate(l.endDate)}</td>
+                <td>${ui.escapeHtml(l.reason || '-')}</td>
+                <td><span class="badge ${badgeClass}">${l.status}</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 5. Conflicts
+        const cContainer = document.getElementById('conflicts-container');
+        if (!data.openConflicts || data.openConflicts.length === 0) {
+          document.getElementById('conflicts-card').style.display = 'none';
+        } else {
+          document.getElementById('conflicts-card').style.display = 'block';
+          cContainer.innerHTML = data.openConflicts.map(c => `
+            <div style="background:var(--bg-surface); padding:0.75rem 1rem; border-radius:var(--radius-md); border-left:3px solid var(--danger);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                <span style="font-weight:600; color:var(--danger);">${ui.escapeHtml(c.type)}</span>
+                <span class="badge badge-red">${c.severity}</span>
+              </div>
+              <div style="font-size:0.85rem; color:var(--text-main);">${ui.escapeHtml(c.description)}</div>
+              <div style="font-size:0.75rem; color:var(--text-subtle); margin-top:0.25rem;">Impact Period: ${ui.formatDate(c.startDate)} → ${ui.formatDate(c.endDate)}</div>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        ui.renderError(loadState, err, loadDeveloperDashboard);
+      }
+    }
+
+    function renderWeeklyChart(weeks) {
+      const ctx = document.getElementById('weeklyLoadChart').getContext('2d');
+      if (loadChart) loadChart.destroy();
+
+      const labels = weeks.map(w => w.weekLabel);
+      const dataValues = weeks.map(w => w.loadPct);
+      const backgroundColors = dataValues.map(v => v > 100 ? '#ef4444' : v > 85 ? '#f59e0b' : '#3b82f6');
+
+      loadChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Commitment %',
+            data: dataValues,
+            backgroundColor: backgroundColors,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Load: ${ctx.parsed.y}%`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: Math.max(120, Math.max(...dataValues) + 20),
+              grid: { color: '#374151' },
+              ticks: { color: '#9ca3af', callback: v => `${v}%` }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#9ca3af' }
+            }
+          }
+        }
+      });
+    }
+
+    function openProgressModal(milestoneId, name, currentPct) {
+      ui.showModal({
+        title: `Update Progress · ${name}`,
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="new-progress">Progress Percentage (0 - 100)</label>
+            <input type="number" id="new-progress" class="form-control" min="0" max="100" value="${currentPct}">
+          </div>
+        `,
+        confirmText: 'Submit Update',
+        onConfirm: async (modal) => {
+          const val = parseFloat(modal.querySelector('#new-progress').value);
+          if (isNaN(val) || val < 0 || val > 100) {
+            ui.showToast('Please enter a percentage between 0 and 100.', 'error');
+            return false;
+          }
+          try {
+            await api.put(`/milestones/${milestoneId}/progress`, { progressPct: val });
+            ui.showToast('Milestone progress updated successfully!', 'success');
+            loadDeveloperDashboard();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-request-leave').onclick = () => {
+      const today = new Date().toISOString().split('T')[0];
+      ui.showModal({
+        title: 'Request Leave',
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="leave-start">Start Date</label>
+            <input type="date" id="leave-start" class="form-control" value="${today}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="leave-end">End Date</label>
+            <input type="date" id="leave-end" class="form-control" value="${today}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="leave-reason">Reason</label>
+            <textarea id="leave-reason" class="form-control" rows="2" placeholder="Vacation, medical, etc."></textarea>
+          </div>
+        `,
+        confirmText: 'Submit Request',
+        onConfirm: async (modal) => {
+          const startDate = modal.querySelector('#leave-start').value;
+          const endDate = modal.querySelector('#leave-end').value;
+          const reason = modal.querySelector('#leave-reason').value.trim();
+
+          if (!startDate || !endDate) {
+            ui.showToast('Please specify both start and end dates.', 'error');
+            return false;
+          }
+          if (new Date(startDate) > new Date(endDate)) {
+            ui.showToast('Start date cannot be after end date.', 'error');
+            return false;
+          }
+
+          try {
+            await api.post('/unavailability', {
+              startDate,
+              endDate,
+              reason
+            });
+            ui.showToast('Leave request submitted successfully!', 'success');
+            loadDeveloperDashboard();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    };
+
+    loadDeveloperDashboard();
+  </script>
+</body>
+</html>

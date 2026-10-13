@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Resource Allocation System — SIST CSE AI Capstone</title>
+    <meta name="description" content="Centralized Project Resource Allocation System with real-time conflict detection, what-if resource simulation, budget burn-down forecasting, and timeline management.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js ONLY for Charts as per Technology Restrictions -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ====================================================================
+         Top Sticky Header
+         ==================================================================== -->
+    <header class="navbar">
+        <div class="brand" onclick="switchTab('viewDashboard')">
+            <div class="brand-icon">PR</div>
+            <div>
+                <div class="brand-title">Project Resource Allocation System</div>
+                <div class="brand-subtitle">Smart Project & Resource Planning</div>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <!-- Active User Status Pill -->
+            <div class="user-status-pill" id="currentUserBadge">
+                <span class="user-role-dot"></span>
+                <span id="userStatusText">👔 Project Manager: Rajesh Ramanathan</span>
+            </div>
+
+            <!-- Clearly Named Notifications Button with Icon & Pill Badge -->
+            <button class="nav-action-btn" id="btnToggleNotif" title="View System Notifications">
+                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+                <span>Notifications</span>
+                <span class="notif-badge" id="notifCountBadge">0</span>
+            </button>
+
+            <!-- Clearly Named Switch / Sign In Button -->
+            <button class="nav-action-btn nav-btn-primary" onclick="openModal('modalLogin')" title="Switch between Project Manager and Developer Logins">
+                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span>Switch / Sign In</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Notification Drawer -->
+    <div class="notif-drawer" id="notifDrawer">
+        <div class="notif-header">
+            <span>System Notifications</span>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-sm btn-outline" onclick="switchTab('viewNotificationsPage')">View All</button>
+                <button class="btn btn-sm btn-outline" id="btnMarkAllRead">Mark All Read</button>
+            </div>
+        </div>
+        <div class="notif-list" id="notifListContainer">
+            <div style="padding: 1rem; text-align: center; color: var(--text-muted);">Loading notifications...</div>
+        </div>
+    </div>
+
+    <!-- ====================================================================
+         Main Navigation Tabs (Organized for First-Time Usability)
+         ==================================================================== -->
+    <nav class="tab-nav" id="pmNavTabs">
+        <button class="tab-btn active" data-view="viewDashboard">📊 Overview</button>
+        <button class="tab-btn" data-view="viewProjects">📁 Projects</button>
+        <button class="tab-btn" data-view="viewResources">👥 Resources</button>
+        <button class="tab-btn" data-view="viewAllocationMatrix">🔲 Allocation Matrix</button>
+        <button class="tab-btn" data-view="viewTimeline">📅 Timeline</button>
+        <button class="tab-btn" data-view="viewHeatmap">🔥 Resource Utilization Heatmap</button>
+        <button class="tab-btn" data-view="viewLeaves">🏖️ Leave & Availability</button>
+        <button class="tab-btn" data-view="viewConflicts">⚠️ Conflict Center</button>
+        <button class="tab-btn" data-view="viewBudgetForecast">📈 Budget Forecast</button>
+        <button class="tab-btn" data-view="viewSimulator">💡 What-if Simulator</button>
+        <button class="tab-btn" data-view="viewSkillVerificationQueue">🎓 Skill Approval Queue <span id="queueCountBadge" class="badge badge-warning" style="margin-left: 4px; display:none;">0</span></button>
+        <button class="tab-btn" data-view="viewTeamDirectory">👥 Team Directory</button>
+        <button class="tab-btn" data-view="viewLeaveApprovals">🏖️ Leave Approvals</button>
+        <button class="tab-btn" data-view="viewNotificationsPage">🔔 Notifications</button>
+    </nav>
+
+    <!-- Employee Navigation Bar (Visible when logged in as Employee) -->
+    <nav class="employee-nav-tabs" id="employeeNavTabs" style="display: none;">
+        <button class="subtab-btn active" id="subtabBtnCalendar" onclick="switchEmpSubTab('empViewCalendar')">📅 Work Schedule Calendar</button>
+        <button class="subtab-btn" id="subtabBtnExtraction" onclick="switchEmpSubTab('empViewSkillExtraction')">🧠 AI Skill Extraction & Enrichment</button>
+        <button class="subtab-btn" id="subtabBtnSkills" onclick="switchEmpSubTab('empViewMySkills')">🏷️ My Skills & Tools</button>
+        <button class="subtab-btn" id="subtabBtnDocuments" onclick="switchEmpSubTab('empViewDocuments')">📜 Documents & Certifications</button>
+        <button class="subtab-btn" id="subtabBtnLeaves" onclick="switchEmpSubTab('empViewLeaves')">🏖️ Leave Requests</button>
+        <button class="subtab-btn" id="subtabBtnAnalytics" onclick="switchEmpSubTab('empViewAnalytics')">📈 Personal Analytics</button>
+    </nav>
+
+    <!-- ====================================================================
+         Main Container Views
+         ==================================================================== -->
+    <main class="container">
+
+        <!-- ================================================================
+             VIEW 1: PM Overview Dashboard
+             ================================================================ -->
+        <section id="viewDashboard" class="view-section active">
+            <!-- Work & Analysis Quick Helper Banner -->
+            <div style="background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-xs); flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.2rem;">📊 Executive Resource & Project Overview</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                        Analyze resource bandwidth, monitor milestones, and resolve workload bottlenecks in real time.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-sm btn-outline" onclick="switchTab('viewConflicts')" style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                        ⚠️ Review Conflict Center
+                    </button>
+                    <button class="btn btn-sm btn-outline" onclick="switchTab('viewHeatmap')" style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                        🔥 Resource Utilization Heatmap
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="switchTab('viewSimulator')" style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                        💡 Open What-if Simulator
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Summary Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">Active Projects</div>
+                    <div class="kpi-value" id="kpiActiveProjects">-</div>
+                    <div class="kpi-sub" id="kpiTotalProjects">Total: -</div>
+                </div>
+                <div class="kpi-card critical">
+                    <div class="kpi-title">Overworked Alerts</div>
+                    <div class="kpi-value" id="kpiCriticalConflicts" style="color: var(--critical);">-</div>
+                    <div class="kpi-sub">Resources over 100% capacity</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-title">Skill & Absence Warnings</div>
+                    <div class="kpi-value" id="kpiSkillGaps" style="color: var(--warning);">-</div>
+                    <div class="kpi-sub" id="kpiWarningsCount">Warnings: -</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Average Resource Utilization</div>
+                    <div class="kpi-value" id="kpiAvgUtil">-</div>
+                    <div class="kpi-sub">Capacity across resources</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Project Budget Spent</div>
+                    <div class="kpi-value" id="kpiBudgetSpend">-</div>
+                    <div class="kpi-sub" id="kpiBudgetRemaining">Remaining: -</div>
+                </div>
+                <div class="kpi-card critical">
+                    <div class="kpi-title">Projects Needing Review</div>
+                    <div class="kpi-value" id="kpiAtRiskProjects" style="color: var(--critical);">-</div>
+                    <div class="kpi-sub">Budget or timeline threat</div>
+                </div>
+            </div>
+
+            <!-- Budget Burn-Down & Exhaustion Forecast Row -->
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📈 Budget Burn-Down & Exhaustion Forecast</h3>
+                        <div>
+                            <select id="budgetProjectSelect" class="form-control" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; font-weight: 600;">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    <div id="budgetMetricsRow" style="display: flex; gap: 1.25rem; margin-bottom: 1rem; font-size: 0.85rem; flex-wrap: wrap;">
+                        <div><strong>Current Spend:</strong> <span id="budgetCurrentSpend" style="color: var(--primary); font-weight: 700;">-</span></div>
+                        <div><strong>Remaining:</strong> <span id="budgetRemaining" style="color: var(--success); font-weight: 700;">-</span></div>
+                        <div><strong>Burn Rate:</strong> <span id="budgetBurnRate" style="color: var(--text-main); font-weight: 700;">-</span></div>
+                        <div><strong>Forecast Exhaustion:</strong> <span id="budgetExhaustionDate" style="color: var(--critical); font-weight: 700;">-</span></div>
+                    </div>
+                    <div style="height: 260px; position: relative;">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Live Conflicts Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>⚠️ Real-Time Allocation Conflicts</h3>
+                        <button class="btn btn-sm btn-outline" onclick="switchTab('viewConflicts')">View All</button>
+                    </div>
+                    <div id="dashboardRecentConflictsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <p style="color: var(--text-muted);">Detecting system conflicts...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Summary Table Card -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h3>📁 Managed Projects Overview</h3>
+                    <button class="btn btn-sm btn-primary" id="btnOpenAddProjectModal">+ New Project</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Status</th>
+                                <th>Timeline</th>
+                                <th>Budget Spent</th>
+                                <th>Budget Utilization</th>
+                                <th>Milestones</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardProjectsTbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 2: Projects & Milestones
+             ================================================================ -->
+        <section id="viewProjects" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Projects & Milestones</h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary btn-sm" id="btnOpenAddProjectModal2">+ Add Project</button>
+                        <button class="btn btn-outline btn-sm" id="btnOpenAddMilestoneModal">+ Add Milestone</button>
+                    </div>
+                </div>
+
+                <!-- Search and Status Filter Toolbar -->
+                <div class="toolbar-row">
+                    <div class="search-box">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="projectSearchInput" placeholder="Search projects by name...">
+                    </div>
+                    <div class="filter-group">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Status:</label>
+                        <select id="projectStatusFilter" class="form-control" style="width: 160px; padding: 0.4rem 0.65rem;">
+                            <option value="ALL">All Statuses</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="PLANNED">Planned</option>
+                            <option value="COMPLETED">Completed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="projectsFullContainer">
+                    <p style="color: var(--text-muted);">Loading projects...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 3: Project Details Drill-Down
+             ================================================================ -->
+        <section id="viewProjectDetails" class="view-section">
+            <div class="drilldown-banner">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                    <button class="btn btn-outline btn-sm" onclick="switchTab('viewProjects')">
+                        ← Back to Projects
+                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary btn-sm" id="btnProjectDetailAddMilestone">+ Add Milestone</button>
+                        <button class="btn btn-outline btn-sm" id="btnProjectDetailSimulate">💡 What-if Simulator</button>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h2 id="projectDetailName" style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">Project Details</h2>
+                        <p id="projectDetailDesc" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0.5rem;">-</p>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);" id="projectDetailDates">Dates: - to -</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="badge badge-info" id="projectDetailStatusBadge">ACTIVE</span>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.5rem;" id="projectDetailBudgetRatio">₹0 / ₹0</div>
+                        <small style="color: var(--text-muted);" id="projectDetailBudgetPercent">0% spent</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project KPIs -->
+            <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+                <div class="kpi-card">
+                    <div class="kpi-title">Total Budget</div>
+                    <div class="kpi-value" id="projectDetailTotalBudget">₹0</div>
+                    <div class="kpi-sub">Allocated capital</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Total Spend</div>
+                    <div class="kpi-value" id="projectDetailSpend" style="color: var(--primary);">₹0</div>
+                    <div class="kpi-sub" id="projectDetailRemaining">Remaining: ₹0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">Daily Burn Rate</div>
+                    <div class="kpi-value" id="projectDetailBurnRate">₹0/day</div>
+                    <div class="kpi-sub">Rolling 30-day window</div>
+                </div>
+                <div class="kpi-card critical">
+                    <div class="kpi-title">Projected Exhaustion</div>
+                    <div class="kpi-value" id="projectDetailExhaustion" style="color: var(--critical); font-size: 1.15rem;">-</div>
+                    <div class="kpi-sub" id="projectDetailStatusIndicator">Status: -</div>
+                </div>
+            </div>
+
+            <!-- Project Milestones Table -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3>Project Milestones & Timeline</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Milestone</th>
+                                <th>Timeline</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Required Skills</th>
+                                <th>Assigned Resources</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectDetailMilestonesTbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Assigned Resources & Budget Transactions 2-Column Grid -->
+            <div class="dashboard-grid">
+                <!-- Assigned Resources -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>👥 Assigned Project Resources</h3>
+                    </div>
+                    <div id="projectDetailResourcesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Budget Transactions Log -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💳 Budget Transactions Log</h3>
+                    </div>
+                    <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                        <table class="data-table" style="font-size: 0.82rem;">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Description</th>
+                                    <th>Recorded By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectDetailTransactionsTbody">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 4: Resources & Capacity
+             ================================================================ -->
+        <section id="viewResources" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Resources & Capacity</h2>
+                    <button class="btn btn-primary btn-sm" id="btnOpenAssignModal">+ Assign Resource</button>
+                </div>
+
+                <!-- Search, Skill Filter, and Sort Toolbar -->
+                <div class="toolbar-row">
+                    <div class="search-box">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="devSearchInput" placeholder="Search resources by name or skill...">
+                    </div>
+                    <div class="filter-group">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Skill:</label>
+                        <select id="devSkillFilter" class="form-control" style="width: 160px; padding: 0.4rem 0.65rem;">
+                            <option value="ALL">All Skills</option>
+                        </select>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-left: 0.5rem;">Sort:</label>
+                        <select id="devSortSelect" class="form-control" style="width: 150px; padding: 0.4rem 0.65rem;">
+                            <option value="NAME">Name (A-Z)</option>
+                            <option value="WORKLOAD_DESC">Workload (High-Low)</option>
+                            <option value="WORKLOAD_ASC">Workload (Low-High)</option>
+                            <option value="RATE_ASC">Rate (Low-High)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="developersCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+                    <p style="color: var(--text-muted);">Loading resources...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 5: Allocation Matrix (Resources x Milestones Grid)
+             ================================================================ -->
+        <section id="viewAllocationMatrix" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>🔲 Resource Allocation Matrix</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Cross-reference matrix showing all Resources (rows) vs. Project Milestones (columns).</p>
+                    </div>
+                    <div class="filter-group">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Filter Project:</label>
+                        <select id="matrixProjectSelect" class="form-control" style="width: 220px; padding: 0.4rem 0.65rem;">
+                            <option value="ALL">All Projects</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive" style="margin-top: 1rem;">
+                    <table class="matrix-table" id="allocationMatrixTable">
+                        <thead id="allocationMatrixThead">
+                            <!-- Populated via JS -->
+                        </thead>
+                        <tbody id="allocationMatrixTbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 6: Interactive Project Timeline
+             ================================================================ -->
+        <section id="viewTimeline" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Project Timeline & Deadlines</h2>
+                    <div style="font-size: 0.82rem; color: var(--text-muted);">
+                        Milestone schedules, completion progress, and assigned resources
+                    </div>
+                </div>
+                <div id="timelineContainer" class="timeline-container">
+                    <p style="color: var(--text-muted);">Rendering timeline...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 7: Resource Utilization Heatmap
+             ================================================================ -->
+        <section id="viewHeatmap" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Resource Utilization Heatmap</h2>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.78rem;">
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: #e0f2fe; display: inline-block; border-radius: 2px;"></span> &lt;50% Light</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: #dcfce7; display: inline-block; border-radius: 2px;"></span> 50-85% Healthy</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: #fef3c7; display: inline-block; border-radius: 2px;"></span> 86-100% Busy</span>
+                        <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 12px; height: 12px; background: #fee2e2; display: inline-block; border-radius: 2px;"></span> &gt;100% Overworked</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="heatmap-table" id="heatmapTable">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Availability</th>
+                                <th>Active Workload</th>
+                                <th>Week 1</th>
+                                <th>Week 2</th>
+                                <th>Week 3</th>
+                                <th>Week 4</th>
+                                <th>Week 5</th>
+                                <th>Workload Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="heatmapTbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 8: Leave & Availability
+             ================================================================ -->
+        <section id="viewLeaves" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Leave & Availability</h2>
+                    <button class="btn btn-primary btn-sm" id="btnOpenAddLeaveModal">+ Schedule Planned Leave</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Duration</th>
+                                <th>Reason / Notes</th>
+                                <th>Status</th>
+                                <th>Capacity Impact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leavesTableTbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 9: Conflict Center
+             ================================================================ -->
+        <section id="viewConflicts" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Conflict Center</h2>
+                    <div style="display: flex; gap: 0.5rem;" id="conflictFilterButtons">
+                        <button class="btn btn-sm btn-outline active" onclick="filterConflicts('ALL')">All (<span id="confCountAll">0</span>)</button>
+                        <button class="btn btn-sm btn-outline" onclick="filterConflicts('CRITICAL')" style="color: var(--critical);">Critical (<span id="confCountCrit">0</span>)</button>
+                        <button class="btn btn-sm btn-outline" onclick="filterConflicts('WARNING')" style="color: var(--warning);">Warning (<span id="confCountWarn">0</span>)</button>
+                    </div>
+                </div>
+
+                <!-- Search in Conflicts -->
+                <div class="toolbar-row">
+                    <div class="search-box" style="width: 320px;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="conflictSearchInput" placeholder="Search alerts by resource, project, or issue...">
+                    </div>
+                </div>
+
+                <div id="conflictsFullList">
+                    <p style="color: var(--text-muted);">Checking for issues...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 10: Dedicated Budget Forecast Page
+             ================================================================ -->
+        <section id="viewBudgetForecast" class="view-section">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <div>
+                        <h2>📈 Budget Forecast & Burn-Down Center</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Daily burn-rate calculations, capital exhaustion forecasting, and transaction ledger.</p>
+                    </div>
+                    <div class="filter-group">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Select Project:</label>
+                        <select id="dedicatedBudgetProjectSelect" class="form-control" style="width: 240px; padding: 0.4rem 0.65rem; font-weight: 600;">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Budget KPIs -->
+                <div class="kpi-grid" style="margin-top: 1rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-title">Total Project Budget</div>
+                        <div class="kpi-value" id="forecastTotalBudget">₹0</div>
+                        <div class="kpi-sub">Total ceiling</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Current Spend</div>
+                        <div class="kpi-value" id="forecastCurrentSpend" style="color: var(--primary);">₹0</div>
+                        <div class="kpi-sub" id="forecastSpendPercent">0% utilized</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Remaining Balance</div>
+                        <div class="kpi-value" id="forecastRemaining" style="color: var(--success);">₹0</div>
+                        <div class="kpi-sub">Available capital</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Daily Burn Rate</div>
+                        <div class="kpi-value" id="forecastBurnRate">₹0/day</div>
+                        <div class="kpi-sub">Rolling 30-day window</div>
+                    </div>
+                    <div class="kpi-card critical">
+                        <div class="kpi-title">Forecast Exhaustion Date</div>
+                        <div class="kpi-value" id="forecastExhaustionDate" style="color: var(--critical); font-size: 1.15rem;">-</div>
+                        <div class="kpi-sub" id="forecastStatusBadge">Status: Normal</div>
+                    </div>
+                </div>
+
+                <!-- Burn-Down Chart -->
+                <div style="margin-top: 1.5rem;">
+                    <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem;">Budget Burn-Down Trajectory</h3>
+                    <div style="height: 320px; position: relative;">
+                        <canvas id="dedicatedBudgetChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Ledger -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>💳 Project Spend Transactions Ledger</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Date</th>
+                                <th>Amount (₹)</th>
+                                <th>Description / Category</th>
+                                <th>Recorded By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="forecastTransactionsTbody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 11: What-if Simulator
+             ================================================================ -->
+        <section id="viewSimulator" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>💡 What-if Simulator</h2>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        Test swapping resources on a project milestone. Real allocations are <strong>NEVER</strong> changed until you click Apply.
+                    </div>
+                </div>
+
+                <!-- Simulation Inputs -->
+                <div class="simulator-setup-box">
+                    <div class="form-group">
+                        <label>Target Milestone</label>
+                        <select id="simMilestoneSelect" class="form-control">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Current Assigned Developer</label>
+                        <select id="simCurrentDevSelect" class="form-control">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Proposed Swap Developer</label>
+                        <select id="simProposedDevSelect" class="form-control">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Allocation %</label>
+                        <input type="number" id="simAllocPctInput" class="form-control" value="60" min="1" max="100">
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" id="btnRunSimulation" style="width: 100%;">Run Simulation</button>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline" id="btnExportSimulationPdf" style="width: 100%; display: none;" onclick="exportSimulationReport()">📄 Export Report (PDF)</button>
+                        <button class="btn btn-outline" id="btnPrintSimulationReport" style="width: 100%; display: none;" onclick="window.print()">🖨️ Print</button>
+                    </div>
+                </div>
+
+                <!-- Simulation Results Output Container -->
+                <div id="simulationResultsContainer" style="display: none; margin-top: 1.5rem;">
+                    <!-- Recommendation Banner -->
+                    <div class="sim-verdict-banner" id="simVerdictBanner">
+                        <div id="simVerdictText">Running simulation analysis...</div>
+                    </div>
+
+                    <!-- Side-by-side comparative grid -->
+                    <div class="sim-comparison-grid">
+                        <!-- Current State Box -->
+                        <div class="sim-box">
+                            <h3 style="margin-bottom: 1rem; color: var(--text-muted);">Current Assignment State</h3>
+                            <div class="sim-metric-row">
+                                <span>Developer:</span>
+                                <strong id="simCurrentDevName">-</strong>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Hourly Rate:</span>
+                                <span id="simCurrentHourlyCost">-</span>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Total Milestone Cost:</span>
+                                <strong id="simCurrentTotalCost">-</strong>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Expected Delivery Date:</span>
+                                <span id="simCurrentDeliveryDate">-</span>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Skill Fit:</span>
+                                <span id="simCurrentSkillMatch">-</span>
+                            </div>
+                        </div>
+
+                        <!-- Simulated State Box -->
+                        <div class="sim-box simulated">
+                            <h3 style="margin-bottom: 1rem; color: var(--primary);">Simulated Swap State</h3>
+                            <div class="sim-metric-row">
+                                <span>Proposed Developer:</span>
+                                <strong id="simProposedDevName">-</strong>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Hourly Rate:</span>
+                                <span id="simSimulatedHourlyCost">-</span>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Total Milestone Cost:</span>
+                                <strong id="simSimulatedTotalCost">-</strong>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Projected Delivery Date:</span>
+                                <span id="simSimulatedDeliveryDate">-</span>
+                            </div>
+                            <div class="sim-metric-row">
+                                <span>Skill Fit:</span>
+                                <span id="simSimulatedSkillMatch">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variance Impact Summary -->
+                    <div class="sim-impact-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                        <div class="kpi-card">
+                            <div class="kpi-title">Cost Difference</div>
+                            <div class="kpi-value" id="simDeltaCost">-</div>
+                            <div class="kpi-sub" id="simDeltaCostSub">-</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Schedule Shift</div>
+                            <div class="kpi-value" id="simDeltaDelivery">-</div>
+                            <div class="kpi-sub" id="simDeltaDeliverySub">-</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Skill Match Impact</div>
+                            <div class="kpi-value" id="simSkillImpactVal">-</div>
+                            <div class="kpi-sub" id="simSkillImpactSub">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Row -->
+                    <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <button class="btn btn-primary" id="btnApplySimulation">Apply Change to Schedule</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 12: Developer Dashboard
+             ================================================================ -->
+        <!-- ================================================================
+             VIEW 12: Employee Portal (Full Personal Hub)
+             ================================================================ -->
+        <section id="viewDeveloperPortal" class="view-section">
+            <!-- Profile Completeness Guided Banner -->
+            <div class="completeness-banner" id="profileCompletenessBanner">
+                <div>
+                    <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9;">Profile Completeness & Readiness</div>
+                    <div style="font-size: 1.35rem; font-weight: 800; margin: 4px 0;" id="completenessPctLabel">75% Complete</div>
+                    <div id="completenessNudgeText" style="font-size: 0.86rem; opacity: 0.95;">Add 1 more skill to reach 100% profile completeness and maximize task recommendations!</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+                    <div class="completeness-bar-bg">
+                        <div class="completeness-bar-fill" id="completenessBarFill" style="width: 75%;"></div>
+                    </div>
+                    <button class="btn btn-sm" style="background: white; color: var(--primary); font-weight: 700; border: none;" onclick="openOnboardingWizard()">
+                        ✨ Complete Profile Wizard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Employee Info Header Card -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h2 id="devPortalName">Arun Kumar</h2>
+                            <span class="role-badge role-employee" id="devPortalRoleBadge">EMPLOYEE</span>
+                        </div>
+                        <p id="devPortalRoleTitle" style="color: var(--text-muted); font-size: 0.95rem; margin-top: 2px;">Backend Java Developer • Engineering</p>
+                        <div style="font-size: 0.85rem; margin-top: 4px; color: var(--primary);" id="devPortalEmail">arun@company.com</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="badge badge-success" id="devPortalStatusBadge">ACTIVE</span>
+                        <div style="font-size: 1.15rem; font-weight: 700; margin-top: 6px; color: var(--text-main);" id="devPortalRate">₹600 / hr</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW 1: Work Schedule Calendar (Feature 2) -->
+            <div id="empViewCalendar" class="emp-subview active">
+                <div class="calendar-card">
+                    <!-- Calendar Toolbar -->
+                    <div class="calendar-toolbar">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <h3 id="calCurrentMonthLabel" style="font-size: 1.2rem; font-weight: 800; min-width: 170px;">October 2026</h3>
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn btn-sm btn-outline" id="calBtnPrevMonth" onclick="changeCalendarMonth(-1)">◀ Prev</button>
+                                <button class="btn btn-sm btn-outline" id="calBtnToday" onclick="resetCalendarToCurrent()">Today</button>
+                                <button class="btn btn-sm btn-outline" id="calBtnNextMonth" onclick="changeCalendarMonth(1)">Next ▶</button>
+                            </div>
+                        </div>
+
+                        <!-- View Toggle: Month vs Week -->
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <div class="calendar-legend">
+                                <span class="legend-item"><span class="legend-dot dot-green"></span> &lt;70% Load</span>
+                                <span class="legend-item"><span class="legend-dot dot-amber"></span> 70-90% Load</span>
+                                <span class="legend-item"><span class="legend-dot dot-red"></span> &gt;90% Load</span>
+                                <span class="legend-item">🏖️ Planned Leave</span>
+                                <span class="legend-item">🚩 Deadline</span>
+                            </div>
+                            <div style="display: flex; background: #f1f5f9; padding: 3px; border-radius: var(--radius-sm);">
+                                <button class="btn btn-sm" id="btnCalModeMonth" style="background: white; color: var(--primary); font-weight: 700; border: none;" onclick="setCalendarMode('MONTH')">Month</button>
+                                <button class="btn btn-sm" id="btnCalModeWeek" style="background: transparent; color: var(--text-muted); font-weight: 600; border: none;" onclick="setCalendarMode('WEEK')">Week</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Grid Header -->
+                    <div class="calendar-grid" style="margin-bottom: 6px;">
+                        <div class="calendar-weekday-header">Sun</div>
+                        <div class="calendar-weekday-header">Mon</div>
+                        <div class="calendar-weekday-header">Tue</div>
+                        <div class="calendar-weekday-header">Wed</div>
+                        <div class="calendar-weekday-header">Thu</div>
+                        <div class="calendar-weekday-header">Fri</div>
+                        <div class="calendar-weekday-header">Sat</div>
+                    </div>
+
+                    <!-- Dynamic Calendar Grid Days -->
+                    <div class="calendar-grid" id="calendarDaysGrid">
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                            Loading work schedule calendar...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assigned Milestones Table (from baseline) -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📁 My Assigned Tasks & Milestones</h3>
+                    </div>
+                    <div id="devPortalMilestonesList">
+                        <p style="color: var(--text-muted);">Loading assigned tasks...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW 2: Automatic Skill Extraction Hub (Feature 3a & 3b) -->
+            <div id="empViewSkillExtraction" class="emp-subview" style="display: none;">
+                <!-- 3a: Free-text project descriptions -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3>🤖 Extract Skills from Project Descriptions (Claude AI)</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                                Paste a project summary or achievements. Claude AI analyzes your text, extracting technical skills, tools, and soft skills with confidence scores.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="ai-extractor-box">
+                        <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; display: block;">Project Description</label>
+                        <textarea id="aiProjectInputText" class="form-control" rows="3" placeholder="e.g. Built a real-time analytics dashboard using React and Kafka, deployed on AWS with Docker. Collaborated in an agile scrum team to optimize query latency.">Built a real-time analytics dashboard using React and Kafka, deployed on AWS with Docker. Collaborated in an agile scrum team to optimize query latency.</textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">💡 Extracted skills require your explicit approval before adding as Pending verification.</span>
+                            <button class="btn btn-primary" id="btnExtractSkills" onclick="triggerSkillExtraction()">
+                                ✨ Extract Skills with Claude API
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Extracted Review Suggestions Container -->
+                    <div id="extractedSkillsSection" style="display: none;">
+                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+                            Review AI Skill Suggestions:
+                        </h4>
+                        <div class="suggestion-chips-container" id="extractedSuggestionsList"></div>
+                    </div>
+                </div>
+
+                <!-- 3b: Uploaded Certifications Pipeline -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>📜 Certificate Document OCR & Skill Mapping (Feature 3b)</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                                Upload certificates (PDF/Image). OCR extracts the credential name, issuer, and date. Recognized certificates automatically map to relevant skills.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div class="ai-extractor-box" style="text-align: center; cursor: pointer;" onclick="document.getElementById('certFileInput').click()">
+                        <input type="file" id="certFileInput" style="display: none;" accept=".pdf,.png,.jpg,.jpeg" onchange="handleCertFileSelect(event)">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📄</div>
+                        <strong style="font-size: 1rem; color: var(--primary);">Click or Drop Certificate to Analyze</strong>
+                        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Supports PDF, PNG, JPG (e.g. AWS Solutions Architect, Oracle Java SE, CKA)</div>
+                    </div>
+
+                    <!-- OCR Extraction Preview & Correction Form -->
+                    <div id="certOcrPreviewSection" style="display: none; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="margin: 0;">Extracted Credential Details</h4>
+                            <span id="certConfidenceBadge" class="confidence-chip">Confidence: 98%</span>
+                        </div>
+                        <form id="formConfirmCertificate" onsubmit="confirmSaveCertificate(event)">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label>Certification Name</label>
+                                    <input type="text" id="certNameInput" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Issuing Body</label>
+                                    <input type="text" id="certIssuerInput" class="form-control" required>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label>Issue Date</label>
+                                    <input type="date" id="certDateInput" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Credential ID</label>
+                                    <input type="text" id="certIdInput" class="form-control">
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="font-weight: 600; font-size: 0.85rem;">Automatically Mapped Skill Tags:</label>
+                                <div id="certMappedSkillsChips" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;"></div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                                <button type="button" class="btn btn-outline" onclick="document.getElementById('certOcrPreviewSection').style.display='none'">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save to Documents & Add Skills</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW 3: My Skills & Tools Management (Feature 4 & 3c) -->
+            <div id="empViewMySkills" class="emp-subview" style="display: none;">
+                <!-- Feature 4: Manual Skill Addition Form -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <div>
+                            <h3>🏷️ Add Skill / Tool to Profile (Feature 4)</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                                Autocomplete against the master taxonomy (synonyms auto-resolve). Set proficiency and signal upcoming interest.
+                            </p>
+                        </div>
+                    </div>
+                    <form id="formAddManualSkill" onsubmit="handleManualAddSkill(event)">
+                        <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1.5fr auto; gap: 0.75rem; align-items: end;">
+                            <div class="form-group" style="position: relative;">
+                                <label>Skill or Tool (Autocomplete)</label>
+                                <input type="text" id="manualSkillInput" class="form-control" placeholder="e.g. React, Docker, Python..." autocomplete="off" oninput="handleTaxonomyAutocomplete(this.value)">
+                                <div id="taxonomyAutocompleteDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-sm); z-index: 50; max-height: 180px; overflow-y: auto; box-shadow: var(--shadow-md);"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Proficiency</label>
+                                <select id="manualProficiencySelect" class="form-control">
+                                    <option value="BEGINNER">Beginner</option>
+                                    <option value="INTERMEDIATE" selected>Intermediate</option>
+                                    <option value="EXPERT">Expert</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Years Exp</label>
+                                <input type="number" id="manualYearsExp" class="form-control" min="0" max="30" value="2">
+                            </div>
+                            <div class="form-group" style="padding-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
+                                    <input type="checkbox" id="manualInterestedToggle">
+                                    <span>Actively looking to use</span>
+                                </label>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-primary" style="height: 38px;">+ Add Skill</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Current Profile Skills Table with Verification Badges -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>📋 My Skills & Verification Portfolio</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                                Verified skills are prioritized in manager task assignment scoring. Skills used across 3 completed tasks auto-upgrade by track record.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Skill / Tool</th>
+                                    <th>Category</th>
+                                    <th>Proficiency</th>
+                                    <th>Experience</th>
+                                    <th>Verification Status</th>
+                                    <th>Future Interest</th>
+                                    <th>Endorsements</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeSkillsTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading skills...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW 4: Documents & Certifications Vault -->
+            <div id="empViewDocuments" class="emp-subview" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>📜 Verified Documents & Credentials Vault</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                                Official certifications and validated credentials registered to your employee record.
+                            </p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="switchEmpSubTab('empViewSkillExtraction')">
+                            + Upload New Certificate
+                        </button>
+                    </div>
+                    <div class="documents-grid" id="documentsVaultGrid">
+                        <p style="color: var(--text-muted); padding: 1.5rem;">Loading certifications vault...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW 5: Leave Requests Workflow -->
+            <div id="empViewLeaves" class="emp-subview" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3>🏖️ My Leave Requests & Availability</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0 0;">
+                                Approved leaves block out your calendar dates and dynamically feed into project capacity calculations.
+                            </p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="openModal('modalLeaveRequest')">
+                            + Request Planned Leave
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Reason / Description</th>
+                                    <th>Status</th>
+                                    <th>Reviewed By</th>
+                                    <th>Manager Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeLeavesTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading leave requests...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW 6: Personal Analytics -->
+            <div id="empViewAnalytics" class="emp-subview" style="display: none;">
+                <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-title">Completed Tasks</div>
+                        <div class="kpi-value" id="analyticsTasksCompletedCount">3</div>
+                        <div class="kpi-sub">Across all projects</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Verified Skills</div>
+                        <div class="kpi-value" id="analyticsVerifiedSkillsCount">3</div>
+                        <div class="kpi-sub">By manager & track record</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Average 6-Mo Utilization</div>
+                        <div class="kpi-value" id="analyticsAvgUtilizationVal">74%</div>
+                        <div class="kpi-sub">Optimal bandwidth band</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <h3>📈 6-Month Utilization Trend</h3>
+                    </div>
+                    <div style="height: 260px;">
+                        <canvas id="chartPersonalUtilization"></canvas>
+                    </div>
+                </div>
+
+                <!-- Post-Task Feedback Received -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>⭐ Performance & Manager Post-Task Feedback</h3>
+                    </div>
+                    <div id="analyticsFeedbackList" style="padding-top: 0.5rem;">
+                        <p style="color: var(--text-muted);">Loading feedback...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 14: Manager Pending Skill Verification Queue (Feature 3d)
+             ================================================================ -->
+        <section id="viewSkillVerificationQueue" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>🎓 Team Skill Verification Review Queue</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                            Review pending skills proposed via text extraction, certificates, or self-reported entries. Verified skills receive priority weighting in candidate recommendation match scores.
+                        </p>
+                    </div>
+                    <button class="btn btn-sm btn-outline" onclick="loadManagerVerificationQueue()">🔄 Refresh Queue</button>
+                </div>
+                <div class="table-responsive" style="margin-top: 1rem;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Developer</th>
+                                <th>Skill Name</th>
+                                <th>Category</th>
+                                <th>Proficiency</th>
+                                <th>Source</th>
+                                <th>Experience</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="managerQueueTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading verification queue...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 15: Team Directory (Manager View)
+             ================================================================ -->
+        <section id="viewTeamDirectory" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>👥 Team & Resource Directory</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                            Search and filter qualified engineers across your department by skill tags, role, and available capacity.
+                        </p>
+                    </div>
+                </div>
+                <div class="toolbar-row" style="margin-top: 1rem;">
+                    <input type="text" id="teamDirSearchInput" class="form-control" placeholder="Search by skill name (e.g. Java, React)..." style="max-width: 320px;" oninput="filterTeamDirectory()">
+                    <select id="teamDirRoleFilter" class="form-control" style="max-width: 220px;" onchange="filterTeamDirectory()">
+                        <option value="">All Roles</option>
+                        <option value="Backend">Backend</option>
+                        <option value="Full-Stack">Full-Stack</option>
+                        <option value="DevOps">DevOps & Cloud</option>
+                        <option value="Frontend">Frontend</option>
+                        <option value="AI">AI & Data</option>
+                    </select>
+                </div>
+                <div class="documents-grid" id="teamDirectoryGrid" style="margin-top: 1.5rem;">
+                    <p style="color: var(--text-muted); padding: 1.5rem;">Loading team directory...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 16: Leave Approvals Queue (Manager View)
+             ================================================================ -->
+        <section id="viewLeaveApprovals" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>🏖️ Pending Team Leave Approvals</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                            Review and approve planned leaves. Approved leaves automatically block calendar dates and recalculate capacity.
+                        </p>
+                    </div>
+                </div>
+                <div class="table-responsive" style="margin-top: 1rem;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Developer</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Reason</th>
+                                <th>Requested On</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="managerLeaveQueueTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading leave queue...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             VIEW 13: System Notifications Center
+             ================================================================ -->
+        <section id="viewNotificationsPage" class="view-section">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2>🔔 System Notifications & Audit Center</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Real-time automated alerts for over-allocation conflicts, skill gaps, leaves, and budget status.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-sm btn-outline" id="btnPageMarkAllRead">Mark All Read</button>
+                    </div>
+                </div>
+
+                <!-- Severity Filter Tabs -->
+                <div class="toolbar-row" style="margin-top: 1rem;">
+                    <div style="display: flex; gap: 0.5rem;" id="notifPageFilterButtons">
+                        <button class="btn btn-sm btn-outline active" onclick="filterNotifPage('ALL')">All Notifications</button>
+                        <button class="btn btn-sm btn-outline" onclick="filterNotifPage('CRITICAL')" style="color: var(--critical);">Critical</button>
+                        <button class="btn btn-sm btn-outline" onclick="filterNotifPage('WARNING')" style="color: var(--warning);">Warning</button>
+                        <button class="btn btn-sm btn-outline" onclick="filterNotifPage('INFO')" style="color: var(--info);">Info</button>
+                    </div>
+                </div>
+
+                <div id="fullNotificationsList" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <p style="color: var(--text-muted);">Loading notifications...</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ====================================================================
+         MODALS
+         ==================================================================== -->
+
+    <!-- 1. Dedicated Two-Portal Login Modal: Project Manager vs Developer -->
+    <div class="modal-backdrop" id="modalLogin">
+        <div class="modal-card" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3>Select Your Portal Login</h3>
+                <button class="modal-close" onclick="closeModal('modalLogin')">&times;</button>
+            </div>
+            
+            <!-- Two Portal Selector Buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.5rem; background: #f1f5f9; padding: 4px; border-radius: var(--radius-sm);">
+                <button type="button" class="btn btn-sm" id="tabBtnManagerLogin" style="background: white; color: var(--primary); font-weight: 700; box-shadow: var(--shadow-xs); border: none;" onclick="switchLoginMode('MANAGER')">
+                    👔 Project Manager Login
+                </button>
+                <button type="button" class="btn btn-sm" id="tabBtnDeveloperLogin" style="background: transparent; color: var(--text-muted); font-weight: 600; border: none;" onclick="switchLoginMode('DEVELOPER')">
+                    👤 Developer Login (by ID)
+                </button>
+            </div>
+
+            <!-- Option 1: Project Manager Login Form -->
+            <form id="formLoginManager">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Sign in with your Project Manager credentials to view all projects, manage resource allocations, and review conflict alerts.
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Project Manager Email</label>
+                    <input type="email" id="loginEmail" class="form-control" value="manager@company.com" placeholder="manager@company.com" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" class="form-control" value="admin123" placeholder="••••••••" required>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <a href="javascript:void(0)" onclick="openModal('modalForgotPassword')" style="font-size: 0.82rem; color: var(--primary); text-decoration: underline;">Forgot password?</a>
+                </div>
+                <div style="background: #f8fafc; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.78rem; margin-bottom: 1.25rem; color: var(--text-muted); border: 1px solid var(--border-color);">
+                    <strong>Default Credentials:</strong> <code>manager@company.com</code> / <code>admin123</code><br>
+                    <strong>Employee Credential:</strong> <code>arun@company.com</code> / <code>password123</code>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalLogin')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </div>
+            </form>
+
+            <!-- Option 2: Developer Login Form (by Developer ID number) -->
+            <form id="formLoginDeveloper" style="display: none;">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Enter your <strong>Developer ID number</strong> to open your personal dashboard and view your assigned milestones.
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Developer ID Number</label>
+                    <input type="number" id="loginDeveloperId" class="form-control" placeholder="Enter your ID (e.g. 1, 2, 3, 4, 5)" min="1" max="100" required>
+                </div>
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Quick Click to Select Developer:</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem;">
+                        <button type="button" class="chip-btn" onclick="selectDeveloperDemo(1)">ID 1: Arun Kumar (Java Dev)</button>
+                        <button type="button" class="chip-btn" onclick="selectDeveloperDemo(2)">ID 2: Priya Sharma (Full Stack)</button>
+                        <button type="button" class="chip-btn" onclick="selectDeveloperDemo(3)">ID 3: Rahul Verma (DevOps)</button>
+                        <button type="button" class="chip-btn" onclick="selectDeveloperDemo(4)">ID 4: Sneha Patel (Frontend)</button>
+                        <button type="button" class="chip-btn" onclick="selectDeveloperDemo(5)">ID 5: Vikram Singh (AI & Data)</button>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalLogin')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Sign In to Developer Dashboard</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Assign Resource Modal with Live Capacity Calculator -->
+    <div class="modal-backdrop" id="modalAssign">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Assign Developer to Milestone</h3>
+                <button class="modal-close" onclick="closeModal('modalAssign')">&times;</button>
+            </div>
+            <form id="formAssignResource">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Target Milestone</label>
+                    <select id="modalAssignMilestoneSelect" class="form-control" required></select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Developer</label>
+                    <select id="modalAssignDevSelect" class="form-control" required></select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label>Allocation Percentage (%)</label>
+                        <span id="modalAssignPctLabel" style="font-weight: 700; color: var(--primary);">50%</span>
+                    </div>
+                    <input type="range" id="modalAssignPctSlider" min="5" max="100" step="5" value="50" style="width: 100%; margin: 8px 0; cursor: pointer;">
+                    <input type="number" id="modalAssignPctInput" class="form-control" value="50" min="1" max="100" required>
+                </div>
+
+                <!-- Live Capacity & Conflict Predictor Box -->
+                <div id="modalDevCapacityPreview" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1.25rem; font-size: 0.82rem;">
+                    Select a developer to view live capacity impact.
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalAssign')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm Allocation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Create Project Modal -->
+    <div class="modal-backdrop" id="modalProject">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Create New Project</h3>
+                <button class="modal-close" onclick="closeModal('modalProject')">&times;</button>
+            </div>
+            <form id="formCreateProject">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Project Name</label>
+                    <input type="text" id="modalProjectName" class="form-control" placeholder="e.g. Project Epsilon" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Description</label>
+                    <textarea id="modalProjectDesc" class="form-control" rows="3" placeholder="Brief project summary..."></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="modalProjectStart" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="modalProjectEnd" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Initial Total Budget (₹)</label>
+                    <input type="number" id="modalProjectBudget" class="form-control" placeholder="500000" min="0" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalProject')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Create Milestone Modal -->
+    <div class="modal-backdrop" id="modalMilestone">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Add Project Milestone</h3>
+                <button class="modal-close" onclick="closeModal('modalMilestone')">&times;</button>
+            </div>
+            <form id="formCreateMilestone">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Parent Project</label>
+                    <select id="modalMilestoneProjectSelect" class="form-control" required></select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Milestone Name</label>
+                    <input type="text" id="modalMilestoneName" class="form-control" placeholder="e.g. Auth & Security Module" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Description</label>
+                    <textarea id="modalMilestoneDesc" class="form-control" rows="2"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="modalMilestoneStart" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="modalMilestoneEnd" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Estimated Effort (Hours)</label>
+                    <input type="number" id="modalMilestoneEffort" class="form-control" value="80" min="1" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Required Skills (Hold Ctrl to select multiple)</label>
+                    <select id="modalMilestoneSkillsSelect" class="form-control" multiple size="4"></select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalMilestone')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Milestone</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. Schedule Leave Modal (Admin/Manager) -->
+    <div class="modal-backdrop" id="modalLeave">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Schedule Developer Leave</h3>
+                <button class="modal-close" onclick="closeModal('modalLeave')">&times;</button>
+            </div>
+            <form id="formScheduleLeave">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Developer</label>
+                    <select id="modalLeaveDevSelect" class="form-control" required></select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="modalLeaveStart" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="modalLeaveEnd" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Reason / Notes</label>
+                    <input type="text" id="modalLeaveReason" class="form-control" placeholder="e.g. Annual Vacation, Medical" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalLeave')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule Leave</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6. FEATURE 2: Calendar Day-Detail Modal -->
+    <div class="modal-backdrop" id="modalDayDetail">
+        <div class="modal-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modalDayDetailDate">📅 Date Details</h3>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Daily allocation schedule, tasks, time blocks & events</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modalDayDetail')">&times;</button>
+            </div>
+            <div style="margin-bottom: 1.25rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div>
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Total Daily Workload</div>
+                        <div style="font-size: 1.4rem; font-weight: 800;" id="modalDayDetailLoad">60%</div>
+                    </div>
+                    <div id="modalDayDetailStatusBadge">
+                        <span class="load-pill pill-green">Optimal Load</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks list -->
+            <div style="margin-bottom: 1.25rem;">
+                <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 0.5rem;">Allocated Tasks & Milestones:</h4>
+                <div id="modalDayDetailTasksList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">No tasks assigned on this date.</p>
+                </div>
+            </div>
+
+            <!-- Planned Leaves on this date -->
+            <div id="modalDayDetailLeaveSection" style="margin-bottom: 1.25rem; display: none;">
+                <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--critical);">Planned Leave / Out of Office:</h4>
+                <div id="modalDayDetailLeaveText" style="padding: 0.75rem; background: #fef2f2; border-radius: var(--radius-sm); border: 1px solid #fecaca; font-size: 0.85rem;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-outline" onclick="closeModal('modalDayDetail')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. FEATURE 1: Forgot Password Modal -->
+    <div class="modal-backdrop" id="modalForgotPassword">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3>Forgot Password</h3>
+                <button class="modal-close" onclick="closeModal('modalForgotPassword')">&times;</button>
+            </div>
+            <form id="formForgotPassword" onsubmit="handleForgotPassword(event)">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Enter your registered email address. We'll generate a secure reset token link for you.
+                </p>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Registered Email Address</label>
+                    <input type="email" id="forgotEmailInput" class="form-control" placeholder="arun@company.com" required>
+                </div>
+                <div id="forgotTokenOutputSection" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.75rem; border-radius: var(--radius-sm); margin-bottom: 1rem; font-size: 0.82rem;">
+                    <strong style="color: #166534;">Password Reset Link Generated:</strong>
+                    <div id="forgotTokenOutputLink" style="word-break: break-all; margin-top: 4px; font-family: monospace; color: var(--primary);"></div>
+                    <button type="button" class="btn btn-sm btn-primary" style="margin-top: 8px;" onclick="openResetFromForgot()">Click to Proceed to Reset Password</button>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalForgotPassword')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitForgot">Send Reset Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 8. FEATURE 1: Reset Password Modal -->
+    <div class="modal-backdrop" id="modalResetPassword">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <button class="modal-close" onclick="closeModal('modalResetPassword')">&times;</button>
+            </div>
+            <form id="formResetPassword" onsubmit="handleResetPassword(event)">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Reset Token</label>
+                    <input type="text" id="resetTokenInput" class="form-control" placeholder="Paste reset token..." required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>New Password</label>
+                    <input type="password" id="resetNewPasswordInput" class="form-control" placeholder="Minimum 6 characters" minlength="6" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalResetPassword')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 9. FEATURE 1: Onboarding Profile Wizard Modal -->
+    <div class="modal-backdrop" id="modalOnboarding">
+        <div class="modal-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <div>
+                    <h3>🚀 Welcome to the Employee Portal</h3>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Complete your profile setup to unlock automated project matching</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modalOnboarding')">&times;</button>
+            </div>
+            <form id="formOnboardingWizard" onsubmit="handleOnboardingSubmit(event)">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Confirm Your Professional Role / Title</label>
+                    <input type="text" id="onboardRoleTitle" class="form-control" placeholder="e.g. Senior Java Backend Developer" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Profile Picture URL / Avatar</label>
+                    <input type="text" id="onboardAvatarUrl" class="form-control" placeholder="https://api.dicebear.com/7.x/avataaars/svg?seed=Arun" value="https://api.dicebear.com/7.x/avataaars/svg?seed=Arun">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Select Top 3 Core Technical Skills</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                        <input type="text" id="onboardSkill1" class="form-control" placeholder="Skill 1 (e.g. Java)" value="Java" required>
+                        <input type="text" id="onboardSkill2" class="form-control" placeholder="Skill 2 (e.g. Spring Boot)" value="Spring Boot" required>
+                        <input type="text" id="onboardSkill3" class="form-control" placeholder="Skill 3 (e.g. MySQL)" value="MySQL" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Weekly Working Hours Availability</label>
+                    <input type="number" id="onboardWeeklyHours" class="form-control" value="40" min="10" max="60" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalOnboarding')">Skip for Now</button>
+                    <button type="submit" class="btn btn-primary">Save & Launch Portal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 10. Employee Leave Request Modal -->
+    <div class="modal-backdrop" id="modalLeaveRequest">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>🏖️ Request Planned Leave</h3>
+                <button class="modal-close" onclick="closeModal('modalLeaveRequest')">&times;</button>
+            </div>
+            <form id="formEmployeeLeaveRequest" onsubmit="handleEmployeeLeaveSubmit(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="empLeaveStart" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="empLeaveEnd" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Reason / Notes for Manager</label>
+                    <textarea id="empLeaveReason" class="form-control" rows="3" placeholder="e.g. Family vacation, personal leaves..." required></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalLeaveRequest')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Leave Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 11. Manager Post-Task Feedback Modal -->
+    <div class="modal-backdrop" id="modalPostTaskFeedback">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3>⭐ Post-Task Manager Feedback</h3>
+                <button class="modal-close" onclick="closeModal('modalPostTaskFeedback')">&times;</button>
+            </div>
+            <form id="formPostTaskFeedback" onsubmit="handlePostTaskFeedbackSubmit(event)">
+                <input type="hidden" id="feedbackMilestoneId">
+                <input type="hidden" id="feedbackDeveloperId">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Rating (1 to 5 Stars)</label>
+                    <select id="feedbackRating" class="form-control" required>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Excellent Delivery</option>
+                        <option value="4" selected>⭐⭐⭐⭐ 4 - Strong Performance</option>
+                        <option value="3">⭐⭐⭐ 3 - Satisfactory</option>
+                        <option value="2">⭐⭐ 2 - Needs Improvement</option>
+                        <option value="1">⭐ 1 - Subpar Quality</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label>Review & Constructive Feedback</label>
+                    <textarea id="feedbackComment" class="form-control" rows="3" placeholder="Notes on code quality, speed, communication, and domain depth..." required></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('modalPostTaskFeedback')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Feedback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Core Application Logic -->
+    <script src="js/script.js"></script>
+</body>
+</html>

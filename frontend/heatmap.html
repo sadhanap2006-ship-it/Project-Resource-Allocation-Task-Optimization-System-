@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heatmap - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .heatmap-table th, .heatmap-table td {
+      padding: 0.4rem;
+      text-align: center;
+    }
+    .heatmap-table th:first-child, .heatmap-table td:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--bg-card);
+      z-index: 2;
+      text-align: left;
+      padding-left: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Capacity Utilization Heatmap</h1>
+          <p>Daily and weekly workload density, over-allocation spikes, and capacity health bands</p>
+        </div>
+        <div class="page-actions">
+          <select id="filter-type" class="form-control" style="width: 160px;">
+            <option value="DEVELOPER" selected>Developers</option>
+            <option value="HARDWARE">Hardware Assets</option>
+            <option value="CLOUD">Cloud Compute</option>
+          </select>
+          <select id="filter-granularity" class="form-control" style="width: 140px;">
+            <option value="WEEK" selected>Weekly</option>
+            <option value="DAY">Daily</option>
+          </select>
+          <button id="btn-refresh" class="btn btn-secondary btn-sm">Refresh</button>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="card" style="margin-bottom: 1.5rem; padding: 0.75rem 1.25rem;">
+        <div style="display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center; font-size:0.8rem;">
+          <span style="font-weight:600; color:var(--text-muted);">Band Thresholds:</span>
+          <span class="heatmap-cell cell-low">LOW (&lt;50%)</span>
+          <span class="heatmap-cell cell-healthy">HEALTHY (50% - 85%)</span>
+          <span class="heatmap-cell cell-high">HIGH (&gt;85% - 100%)</span>
+          <span class="heatmap-cell cell-over">OVER (&gt;100% or &gt;Cap)</span>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="heatmap-container" style="display: none;">
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table heatmap-table" id="heatmap-table">
+              <thead id="heatmap-head"></thead>
+              <tbody id="heatmap-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    async function loadHeatmap() {
+      const loadState = document.getElementById('loading-state');
+      const content = document.getElementById('heatmap-container');
+      ui.renderLoading(loadState, 'Aggregating capacity utilization matrix...');
+
+      const type = document.getElementById('filter-type').value;
+      const granularity = document.getElementById('filter-granularity').value;
+
+      try {
+        const data = await api.get(`/heatmap?type=${type}&granularity=${granularity}`);
+        loadState.style.display = 'none';
+        content.style.display = 'block';
+
+        renderTable(data);
+      } catch (err) {
+        ui.renderError(loadState, err, loadHeatmap);
+      }
+    }
+
+    function renderTable(data) {
+      const thead = document.getElementById('heatmap-head');
+      const tbody = document.getElementById('heatmap-body');
+
+      let headHtml = `
+        <tr>
+          <th style="min-width: 180px;">Resource</th>
+      `;
+      data.dateHeaders.forEach(h => {
+        headHtml += `<th style="min-width: 75px; font-size: 0.7rem;">${ui.escapeHtml(h)}</th>`;
+      });
+      headHtml += `</tr>`;
+      thead.innerHTML = headHtml;
+
+      if (!data.rows || data.rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${data.dateHeaders.length + 1}" style="text-align:center; padding:2rem; color:var(--text-subtle);">No resources found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.rows.map(r => {
+        let rowHtml = `
+          <tr>
+            <td>
+              <div style="font-weight:600;">${ui.escapeHtml(r.resourceName)}</div>
+            </td>
+        `;
+
+        r.cells.forEach(c => {
+          const bandClass = c.band === 'OVER' ? 'cell-over'
+            : c.band === 'HIGH' ? 'cell-high'
+            : c.band === 'HEALTHY' ? 'cell-healthy'
+            : 'cell-low';
+
+          rowHtml += `
+            <td>
+              <div class="heatmap-cell ${bandClass}">
+                ${c.loadPct}%
+              </div>
+            </td>
+          `;
+        });
+
+        rowHtml += `</tr>`;
+        return rowHtml;
+      }).join('');
+    }
+
+    document.getElementById('filter-type').onchange = loadHeatmap;
+    document.getElementById('filter-granularity').onchange = loadHeatmap;
+    document.getElementById('btn-refresh').onclick = loadHeatmap;
+
+    loadHeatmap();
+  </script>
+</body>
+</html>

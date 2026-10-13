@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget & EVM Analytics - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Budget Forecast & Earned Value Management (EVM)</h1>
+          <p>Burn rates, run-out dates, PV/EV/AC analysis, CPI/SPI indices, and transaction ledger</p>
+        </div>
+        <div class="page-actions">
+          <select id="select-project" class="form-control" style="min-width: 220px;"></select>
+          <button id="btn-import-csv" class="btn btn-secondary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Import CSV
+          </button>
+          <button id="btn-add-txn" class="btn btn-primary">+ Add Transaction</button>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="budget-content" style="display: none;">
+        <!-- Metrics Row -->
+        <div class="grid-kpi">
+          <div class="kpi-card">
+            <span class="kpi-label">Actual Spend / Budget</span>
+            <div class="kpi-value" id="kpi-spend">-</div>
+            <div class="kpi-subtext" id="kpi-spend-sub">Utilisation: -</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Burn Rate & Runway</span>
+            <div class="kpi-value" id="kpi-burn">-</div>
+            <div class="kpi-subtext" id="kpi-runout">-</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Cost Performance Index (CPI)</span>
+            <div class="kpi-value" id="kpi-cpi">-</div>
+            <div class="kpi-subtext" id="kpi-cpi-sub">EV / AC efficiency</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Estimate at Completion (EAC)</span>
+            <div class="kpi-value" id="kpi-eac">-</div>
+            <div class="kpi-subtext" id="kpi-spi-sub">SPI: -</div>
+          </div>
+        </div>
+
+        <!-- Charts: Cumulative Spend & Burn-down -->
+        <div class="grid-equal-col" style="margin-bottom: 1.5rem;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Cumulative Cost vs Planned Value (PV)</h3>
+            </div>
+            <div style="height: 240px; position: relative;">
+              <canvas id="cumulativeChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Budget Burn-Down Curve</h3>
+            </div>
+            <div style="height: 240px; position: relative;">
+              <canvas id="burndownChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Ledger -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Project Expense Ledger</h3>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Category</th>
+                  <th>Resource</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody id="txns-table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let projects = [];
+    let currentProjectId = null;
+    let cumChart = null;
+    let burnChart = null;
+
+    const params = new URLSearchParams(window.location.search);
+    const initialProjectId = params.get('projectId');
+
+    async function init() {
+      try {
+        projects = await api.get('/projects');
+        const select = document.getElementById('select-project');
+        select.innerHTML = projects.map(p => `
+          <option value="${p.id}" ${initialProjectId && String(p.id) === String(initialProjectId) ? 'selected' : ''}>
+            ${ui.escapeHtml(p.name)} (${p.code})
+          </option>
+        `).join('');
+
+        currentProjectId = select.value;
+        select.onchange = () => {
+          currentProjectId = select.value;
+          loadBudget();
+        };
+
+        if (currentProjectId) loadBudget();
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    }
+
+    async function loadBudget() {
+      const loadState = document.getElementById('loading-state');
+      const content = document.getElementById('budget-content');
+      ui.renderLoading(loadState, 'Computing EVM metrics and runway forecast...');
+
+      try {
+        const [summary, forecast, txns] = await Promise.all([
+          api.get(`/projects/${currentProjectId}/budget`),
+          api.get(`/projects/${currentProjectId}/budget/forecast`),
+          api.get(`/projects/${currentProjectId}/transactions`)
+        ]);
+
+        loadState.style.display = 'none';
+        content.style.display = 'block';
+
+        // 1. KPI Cards
+        document.getElementById('kpi-spend').innerText = `${ui.formatCurrency(summary.actualSpend)}`;
+        document.getElementById('kpi-spend-sub').innerText = `Budget: ${ui.formatCurrency(summary.totalBudget)} (${summary.budgetUtilisationPct}%)`;
+
+        document.getElementById('kpi-burn').innerText = forecast.burnRateDaily ? `${ui.formatCurrency(forecast.burnRateDaily)}/day` : '₹0.00/day';
+        document.getElementById('kpi-runout').innerText = forecast.runOutDate
+          ? `Run-out: ${ui.formatDate(forecast.runOutDate)} (${forecast.daysLeft} days left)`
+          : (forecast.daysLeft !== null ? 'Within project window' : 'Insufficient spending data');
+
+        const cpi = forecast.evm?.cpi || summary.cpi || null;
+        const spi = forecast.evm?.spi || summary.spi || null;
+        const eac = forecast.evm?.eac || summary.eac || null;
+
+        document.getElementById('kpi-cpi').innerText = cpi !== null ? cpi : '-';
+        document.getElementById('kpi-cpi').style.color = cpi !== null && cpi < 0.9 ? 'var(--danger)' : 'var(--success)';
+        document.getElementById('kpi-cpi-sub').innerText = cpi !== null && cpi < 0.9 ? 'Cost overrun risk detected' : 'Cost efficiency healthy';
+
+        document.getElementById('kpi-eac').innerText = eac !== null ? ui.formatCurrency(eac) : '-';
+        document.getElementById('kpi-spi-sub').innerText = spi !== null ? `SPI: ${spi} (${spi < 0.9 ? 'Behind schedule' : 'On track'})` : 'SPI: -';
+
+        // 2. Charts
+        renderCharts(forecast);
+
+        // 3. Transactions table
+        const tbody = document.getElementById('txns-table-body');
+        if (!txns || txns.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No transactions recorded.</td></tr>';
+        } else {
+          tbody.innerHTML = txns.map(t => `
+            <tr>
+              <td>${ui.formatDate(t.txnDate)}</td>
+              <td><strong>${ui.formatCurrency(t.amount)}</strong></td>
+              <td><span class="badge badge-neutral">${ui.escapeHtml(t.category)}</span></td>
+              <td>${t.resourceName ? ui.escapeHtml(t.resourceName) : '-'}</td>
+              <td style="color:var(--text-muted); font-size:0.8rem;">${ui.escapeHtml(t.note || '-')}</td>
+            </tr>
+          `).join('');
+        }
+
+      } catch (err) {
+        ui.renderError(loadState, err, loadBudget);
+      }
+    }
+
+    function renderCharts(forecast) {
+      const dates = (forecast.dailyForecast || []).map(d => d.date);
+      const actualSpend = (forecast.dailyForecast || []).map(d => d.actualCumulative);
+      const plannedVal = (forecast.dailyForecast || []).map(d => d.plannedValueCumulative);
+      const remainingBudg = (forecast.dailyForecast || []).map(d => d.budgetRemaining);
+
+      const ctx1 = document.getElementById('cumulativeChart').getContext('2d');
+      if (cumChart) cumChart.destroy();
+      cumChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              label: 'Actual Spend',
+              data: actualSpend,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 2,
+              pointRadius: 0
+            },
+            {
+              label: 'Planned Value (PV)',
+              data: plannedVal,
+              borderColor: '#3b82f6',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af', callback: v => `₹${v/1000}k` } },
+            x: { grid: { display: false }, ticks: { color: '#9ca3af', maxTicksLimit: 8 } }
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById('burndownChart').getContext('2d');
+      if (burnChart) burnChart.destroy();
+      burnChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [
+            {
+              label: 'Remaining Budget',
+              data: remainingBudg,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              borderWidth: 2,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af', callback: v => `₹${v/1000}k` } },
+            x: { grid: { display: false }, ticks: { color: '#9ca3af', maxTicksLimit: 8 } }
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-add-txn').onclick = () => {
+      const today = new Date().toISOString().split('T')[0];
+      ui.showModal({
+        title: 'Add Project Expense Transaction',
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="txn-date">Transaction Date</label>
+            <input type="date" id="txn-date" class="form-control" value="${today}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="txn-amount">Amount (INR ₹)</label>
+            <input type="number" id="txn-amount" class="form-control" min="1" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="txn-cat">Category</label>
+            <select id="txn-cat" class="form-control">
+              <option value="DEVELOPER">DEVELOPER</option>
+              <option value="HARDWARE">HARDWARE</option>
+              <option value="CLOUD">CLOUD</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="txn-note">Note</label>
+            <input type="text" id="txn-note" class="form-control" placeholder="Description of expense">
+          </div>
+        `,
+        confirmText: 'Record Expense',
+        onConfirm: async (modal) => {
+          const txnDate = modal.querySelector('#txn-date').value;
+          const amount = parseFloat(modal.querySelector('#txn-amount').value);
+          const category = modal.querySelector('#txn-cat').value;
+          const note = modal.querySelector('#txn-note').value.trim();
+
+          if (!txnDate || isNaN(amount) || amount <= 0) {
+            ui.showToast('Please specify a valid date and positive amount.', 'error');
+            return false;
+          }
+
+          try {
+            await api.post(`/projects/${currentProjectId}/transactions`, {
+              txnDate,
+              amount,
+              category,
+              note
+            });
+            ui.showToast('Transaction added successfully.', 'success');
+            loadBudget();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    };
+
+    document.getElementById('btn-import-csv').onclick = () => {
+      ui.showModal({
+        title: 'Import Expenses CSV',
+        bodyHtml: `
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+            Upload a CSV file with columns: <code>date,amount,category,note</code>
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="csv-file">Select CSV File</label>
+            <input type="file" id="csv-file" class="form-control" accept=".csv">
+          </div>
+        `,
+        confirmText: 'Import',
+        onConfirm: async (modal) => {
+          const fileInput = modal.querySelector('#csv-file');
+          if (!fileInput.files || fileInput.files.length === 0) {
+            ui.showToast('Please select a CSV file.', 'error');
+            return false;
+          }
+
+          const formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+
+          try {
+            await api.post(`/projects/${currentProjectId}/transactions/import`, formData);
+            ui.showToast('CSV imported successfully.', 'success');
+            loadBudget();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    };
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+/* SIST Capstone - Project Resource Allocation System
+   Enterprise Design System: Tokens, Typography, Resets
+   Two-Theme System: Dark (Default) & Light Mode
+*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* DARK THEME (DEFAULT) */
+  --bg-main: #0b0f19;
+  --bg-card: #111827;
+  --bg-surface: #1f2937;
+  --bg-elevated: #374151;
+  --border-color: #374151;
+  --border-focus: #3b82f6;
+
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --text-subtle: #6b7280;
+
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-surface: rgba(59, 130, 246, 0.12);
+
+  --success: #10b981;
+  --success-surface: rgba(16, 185, 129, 0.15);
+  --warning: #f59e0b;
+  --warning-surface: rgba(245, 158, 11, 0.15);
+  --danger: #ef4444;
+  --danger-surface: rgba(239, 68, 68, 0.15);
+
+  --band-low: #3b82f6;
+  --band-healthy: #10b981;
+  --band-high: #f59e0b;
+  --band-over: #ef4444;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --transition-fast: 150ms ease-in-out;
+}
+
+[data-theme="light"] {
+  /* LIGHT THEME */
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-surface: #f1f5f9;
+  --bg-elevated: #e2e8f0;
+  --border-color: #e2e8f0;
+  --border-focus: #2563eb;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-surface: rgba(37, 99, 235, 0.08);
+
+  --success: #059669;
+  --success-surface: rgba(5, 150, 105, 0.1);
+  --warning: #d97706;
+  --warning-surface: rgba(217, 119, 6, 0.1);
+  --danger: #dc2626;
+  --danger-surface: rgba(220, 38, 38, 0.1);
+
+  --band-low: #2563eb;
+  --band-healthy: #059669;
+  --band-high: #d97706;
+  --band-over: #dc2626;
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.1rem; }
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+p {
+  color: var(--text-muted);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-elevated);
+}

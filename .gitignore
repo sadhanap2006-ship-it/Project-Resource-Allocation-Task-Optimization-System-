@@ -1,0 +1,33 @@
+# Environment and Secrets
+.env
+.env.local
+*.env
+
+# Build Output
+target/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Logs
+*.log
+logs/
+
+# IDE and Editor
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db
+
+# OS Temporary Files
+*.tmp
+*.bak

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What-If Simulator - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .change-builder-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .delta-better { color: #34d399; font-weight: 600; }
+    .delta-worse { color: #f87171; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>What-If Scenario Simulation Engine</h1>
+          <p>Test resource swaps and reassignments in-memory without altering production data</p>
+        </div>
+        <div class="page-actions">
+          <select id="select-project" class="form-control" style="min-width: 220px;"></select>
+          <button id="btn-run-sim" class="btn btn-primary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            Run Simulation
+          </button>
+          <button id="btn-save-sim" class="btn btn-secondary" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Scenario
+          </button>
+          <button id="btn-export-pdf" class="btn btn-secondary" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Export PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Change Builder Card -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <h3 class="card-title">Scenario Changes & Hypothetical Adjustments</h3>
+          <div style="display:flex; gap:0.5rem;">
+            <button id="btn-quick-swap" class="btn btn-secondary btn-sm" title="Setup Example 6 Demo Swap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              Quick-Fill Demo Swap
+            </button>
+            <button id="btn-add-change" class="btn btn-secondary btn-sm">+ Add Modification</button>
+          </div>
+        </div>
+        <div id="changes-list">
+          <div style="text-align:center; padding:1rem; color:var(--text-subtle);">No changes added yet. Click "+ Add Modification" or "Quick-Fill Demo Swap".</div>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="simulation-results" style="display: none;">
+        <!-- Recommendation Alert Banner -->
+        <div id="rec-banner" style="padding:1.25rem; border-radius:var(--radius-lg); margin-bottom:1.5rem; border-left:4px solid var(--primary); background:var(--bg-card);">
+          <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+            <span id="rec-badge" class="badge badge-green" style="font-size:0.9rem; padding:0.35rem 0.8rem;">RECOMMENDATION: APPLY</span>
+            <strong id="rec-title" style="font-size:1.1rem; color:var(--text-main);">Positive Schedule Impact Detected</strong>
+          </div>
+          <p id="rec-reason" style="font-size:0.9rem; color:var(--text-muted); margin:0;">-</p>
+        </div>
+
+        <!-- Side-by-Side Comparison -->
+        <div class="grid-equal-col" style="margin-bottom: 1.5rem;">
+          <!-- Baseline Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Current Baseline</h3>
+              <span class="badge badge-neutral">Production State</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Planned Total Cost:</span>
+                <strong id="base-cost">-</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Forecast Delivery Date:</span>
+                <strong id="base-delivery">-</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Budget Run-Out Date:</span>
+                <strong id="base-runout">-</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Simulated Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Simulated Outcome</h3>
+              <span class="badge badge-blue">What-If In-Memory</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Simulated Total Cost:</span>
+                <div>
+                  <strong id="sim-cost">-</strong>
+                  <span id="sim-cost-delta" style="font-size:0.8rem; margin-left:6px;"></span>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Forecast Delivery Date:</span>
+                <div>
+                  <strong id="sim-delivery">-</strong>
+                  <span id="sim-delivery-delta" style="font-size:0.8rem; margin-left:6px;"></span>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+                <span style="color:var(--text-muted);">Budget Run-Out Date:</span>
+                <strong id="sim-runout">-</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conflict Delta -->
+        <div class="grid-equal-col">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title" style="color:var(--success);">Conflicts Resolved</h3>
+              <span class="badge badge-green" id="conflicts-removed-count">0</span>
+            </div>
+            <div id="conflicts-removed-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+              <div style="color:var(--text-subtle); font-size:0.85rem;">No conflicts removed.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title" style="color:var(--danger);">New Conflicts Introduced</h3>
+              <span class="badge badge-red" id="conflicts-added-count">0</span>
+            </div>
+            <div id="conflicts-added-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+              <div style="color:var(--text-subtle); font-size:0.85rem;">No new conflicts introduced.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let projects = [];
+    let resources = [];
+    let currentProjectId = null;
+    let changes = [];
+    let latestResult = null;
+    let savedScenarioId = null;
+
+    async function init() {
+      try {
+        [projects, resources] = await Promise.all([
+          api.get('/projects'),
+          api.get('/resources')
+        ]);
+
+        const select = document.getElementById('select-project');
+        select.innerHTML = projects.map(p => `
+          <option value="${p.id}">${ui.escapeHtml(p.name)} (${p.code})</option>
+        `).join('');
+
+        currentProjectId = select.value;
+        select.onchange = () => {
+          currentProjectId = select.value;
+          changes = [];
+          latestResult = null;
+          savedScenarioId = null;
+          renderChangesList();
+          document.getElementById('simulation-results').style.display = 'none';
+          document.getElementById('btn-save-sim').disabled = true;
+          document.getElementById('btn-export-pdf').disabled = true;
+        };
+
+        renderChangesList();
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    }
+
+    function renderChangesList() {
+      const container = document.getElementById('changes-list');
+      if (changes.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No changes added yet. Add a change or click "Quick-Fill Demo Swap".</div>';
+        return;
+      }
+
+      container.innerHTML = changes.map((c, idx) => `
+        <div class="change-builder-item">
+          <div>
+            <strong style="color:var(--primary); font-size:0.85rem;">${c.type}</strong>
+            <span style="font-size:0.85rem; color:var(--text-main); margin-left:8px;">
+              ${describeChange(c)}
+            </span>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="color:var(--danger);" onclick="removeChange(${idx})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    window.removeChange = (idx) => {
+      changes.splice(idx, 1);
+      renderChangesList();
+    };
+
+    function describeChange(c) {
+      if (c.type === 'SWAP') {
+        const fromR = resources.find(r => r.id === c.fromResourceId)?.name || `Resource #${c.fromResourceId}`;
+        const toR = resources.find(r => r.id === c.toResourceId)?.name || `Resource #${c.toResourceId}`;
+        return `Swap Allocation #${c.allocationId}: ${fromR} → ${toR}`;
+      } else if (c.type === 'ADD') {
+        const r = resources.find(res => res.id === c.toResourceId)?.name || `Resource #${c.toResourceId}`;
+        return `Add: ${r} (${c.pct}%) from ${ui.formatDate(c.startDate)} to ${ui.formatDate(c.endDate)}`;
+      } else if (c.type === 'REMOVE') {
+        return `Remove Allocation #${c.allocationId}`;
+      } else {
+        return `Change Allocation #${c.allocationId} commitment to ${c.newPct}%`;
+      }
+    }
+
+    // Quick-Fill Example 6 Swap (Arun -> Karthik on BETA M1)
+    document.getElementById('btn-quick-swap').onclick = async () => {
+      try {
+        const allAllocs = await api.get('/allocations');
+        // Find Arun's allocation
+        const arun = resources.find(r => r.name.toLowerCase().includes('arun'));
+        const karthik = resources.find(r => r.name.toLowerCase().includes('karthik'));
+
+        const targetAlloc = allAllocs.find(a => arun && a.resourceId === arun.id && a.allocationPct === 50) || allAllocs[0];
+        if (!targetAlloc || !karthik) {
+          ui.showToast('Could not find seed allocation for Arun/Karthik demo swap.', 'error');
+          return;
+        }
+
+        changes = [{
+          type: 'SWAP',
+          allocationId: targetAlloc.id,
+          fromResourceId: targetAlloc.resourceId,
+          toResourceId: karthik.id
+        }];
+
+        renderChangesList();
+        ui.showToast('Demo swap configured: Swap Arun → Karthik', 'info');
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    };
+
+    document.getElementById('btn-add-change').onclick = async () => {
+      const allAllocs = await api.get('/allocations');
+      const allocOptions = allAllocs.map(a => `
+        <option value="${a.id}">#${a.id} - ${ui.escapeHtml(a.resourceName)} (${a.allocationPct}%) on ${ui.escapeHtml(a.milestoneName)}</option>
+      `).join('');
+
+      const resOptions = resources.map(r => `
+        <option value="${r.id}">${ui.escapeHtml(r.name)} (${r.type})</option>
+      `).join('');
+
+      ui.showModal({
+        title: 'Add Scenario Modification',
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="mod-type">Modification Type</label>
+            <select id="mod-type" class="form-control">
+              <option value="SWAP">SWAP (Replace resource in existing allocation)</option>
+              <option value="REMOVE">REMOVE (Drop allocation)</option>
+              <option value="CHANGE_PCT">CHANGE_PCT (Adjust allocation %)</option>
+            </select>
+          </div>
+          <div class="form-group" id="group-alloc">
+            <label class="form-label" for="mod-alloc">Target Allocation</label>
+            <select id="mod-alloc" class="form-control">
+              ${allocOptions}
+            </select>
+          </div>
+          <div class="form-group" id="group-to-res">
+            <label class="form-label" for="mod-to-res">Replacement Resource (To)</label>
+            <select id="mod-to-res" class="form-control">
+              ${resOptions}
+            </select>
+          </div>
+          <div class="form-group" id="group-pct" style="display:none;">
+            <label class="form-label" for="mod-pct">New Percentage (%)</label>
+            <input type="number" id="mod-pct" class="form-control" value="50" min="1" max="100">
+          </div>
+        `,
+        confirmText: 'Add to Scenario',
+        onConfirm: async (modal) => {
+          const type = modal.querySelector('#mod-type').value;
+          const allocId = parseInt(modal.querySelector('#mod-alloc').value);
+          const toResId = parseInt(modal.querySelector('#mod-to-res').value);
+          const newPct = parseInt(modal.querySelector('#mod-pct').value);
+
+          const targetA = allAllocs.find(a => a.id === allocId);
+
+          if (type === 'SWAP') {
+            changes.push({
+              type: 'SWAP',
+              allocationId: allocId,
+              fromResourceId: targetA.resourceId,
+              toResourceId: toResId
+            });
+          } else if (type === 'REMOVE') {
+            changes.push({
+              type: 'REMOVE',
+              allocationId: allocId
+            });
+          } else if (type === 'CHANGE_PCT') {
+            changes.push({
+              type: 'CHANGE_PCT',
+              allocationId: allocId,
+              newPct
+            });
+          }
+
+          renderChangesList();
+          return true;
+        }
+      });
+
+      // Toggle form fields
+      document.getElementById('mod-type').onchange = (e) => {
+        const val = e.target.value;
+        document.getElementById('group-to-res').style.display = val === 'SWAP' ? 'block' : 'none';
+        document.getElementById('group-pct').style.display = val === 'CHANGE_PCT' ? 'block' : 'none';
+      };
+    };
+
+    document.getElementById('btn-run-sim').onclick = async () => {
+      if (changes.length === 0) {
+        ui.showToast('Please add at least one change before running simulation.', 'warning');
+        return;
+      }
+
+      const loadState = document.getElementById('loading-state');
+      const resultsEl = document.getElementById('simulation-results');
+      ui.renderLoading(loadState, 'Executing in-memory simulation across pure engines...');
+
+      try {
+        latestResult = await api.post('/simulations/run', {
+          projectId: parseInt(currentProjectId),
+          changes
+        });
+
+        loadState.style.display = 'none';
+        resultsEl.style.display = 'block';
+
+        renderSimulationResult(latestResult);
+        document.getElementById('btn-save-sim').disabled = false;
+        savedScenarioId = null;
+        document.getElementById('btn-export-pdf').disabled = true;
+      } catch (err) {
+        ui.renderError(loadState, err);
+      }
+    };
+
+    function renderSimulationResult(res) {
+      // 1. Recommendation banner
+      const isApply = res.recommendation === 'APPLY';
+      document.getElementById('rec-badge').innerText = `RECOMMENDATION: ${res.recommendation}`;
+      document.getElementById('rec-badge').className = `badge ${isApply ? 'badge-green' : 'badge-red'}`;
+      document.getElementById('rec-title').innerText = isApply ? 'Recommendation: Apply Scenario' : 'Recommendation: Do Not Apply';
+      document.getElementById('rec-reason').innerText = res.recommendationReason;
+
+      // 2. Cost & Delivery Delta
+      document.getElementById('base-cost').innerText = ui.formatCurrency(res.baselinePlanTotal);
+      document.getElementById('sim-cost').innerText = ui.formatCurrency(res.simulatedPlanTotal);
+
+      const costDelta = res.simulatedPlanTotal - res.baselinePlanTotal;
+      const costDeltaEl = document.getElementById('sim-cost-delta');
+      if (costDelta <= 0) {
+        costDeltaEl.innerHTML = `<span class="delta-better">▼ ${ui.formatCurrency(Math.abs(costDelta))} Cheaper</span>`;
+      } else {
+        costDeltaEl.innerHTML = `<span class="delta-worse">▲ ${ui.formatCurrency(costDelta)} More</span>`;
+      }
+
+      document.getElementById('base-delivery').innerText = res.baselineForecastDelivery ? ui.formatDate(res.baselineForecastDelivery) : 'On Schedule';
+      document.getElementById('sim-delivery').innerText = res.simulatedForecastDelivery ? ui.formatDate(res.simulatedForecastDelivery) : 'On Schedule';
+
+      document.getElementById('base-runout').innerText = res.baselineRunOutDate ? ui.formatDate(res.baselineRunOutDate) : 'Within budget';
+      document.getElementById('sim-runout').innerText = res.simulatedRunOutDate ? ui.formatDate(res.simulatedRunOutDate) : 'Within budget';
+
+      // 3. Conflicts
+      document.getElementById('conflicts-removed-count').innerText = res.conflictsRemoved.length;
+      const remList = document.getElementById('conflicts-removed-list');
+      if (res.conflictsRemoved.length === 0) {
+        remList.innerHTML = '<div style="color:var(--text-subtle); font-size:0.85rem;">No conflicts eliminated.</div>';
+      } else {
+        remList.innerHTML = res.conflictsRemoved.map(c => `
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:4px; font-size:0.8rem; border-left:3px solid var(--success);">
+            <span class="badge badge-green" style="font-size:10px; padding:1px 5px; margin-right:6px;">RESOLVED</span>
+            <strong>${ui.escapeHtml(c.type)}</strong>: ${ui.escapeHtml(c.description)}
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('conflicts-added-count').innerText = res.conflictsAdded.length;
+      const addList = document.getElementById('conflicts-added-list');
+      if (res.conflictsAdded.length === 0) {
+        addList.innerHTML = '<div style="color:var(--text-subtle); font-size:0.85rem;">No new conflicts introduced.</div>';
+      } else {
+        addList.innerHTML = res.conflictsAdded.map(c => `
+          <div style="background:var(--bg-surface); padding:6px 10px; border-radius:4px; font-size:0.8rem; border-left:3px solid var(--danger);">
+            <span class="badge badge-red" style="font-size:10px; padding:1px 5px; margin-right:6px;">NEW</span>
+            <strong>${ui.escapeHtml(c.type)}</strong>: ${ui.escapeHtml(c.description)}
+          </div>
+        `).join('');
+      }
+    }
+
+    document.getElementById('btn-save-sim').onclick = () => {
+      ui.showModal({
+        title: 'Save Simulation Scenario',
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="scen-name">Scenario Name</label>
+            <input type="text" id="scen-name" class="form-control" value="Resource Rebalance v1" required>
+          </div>
+        `,
+        confirmText: 'Save Scenario',
+        onConfirm: async (modal) => {
+          const name = modal.querySelector('#scen-name').value.trim();
+          if (!name) {
+            ui.showToast('Please enter a scenario name.', 'error');
+            return false;
+          }
+
+          try {
+            const saved = await api.post('/simulations', {
+              projectId: parseInt(currentProjectId),
+              name,
+              changes
+            });
+            savedScenarioId = saved.id;
+            document.getElementById('btn-export-pdf').disabled = false;
+            ui.showToast(`Scenario "${name}" saved! PDF export enabled.`, 'success');
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    };
+
+    document.getElementById('btn-export-pdf').onclick = async () => {
+      if (!savedScenarioId) return;
+      try {
+        const blob = await api.get(`/simulations/${savedScenarioId}/report.pdf`);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `scenario-${savedScenarioId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        ui.showToast('Scenario PDF report downloaded!', 'success');
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    };
+
+    init();
+  </script>
+</body>
+</html>

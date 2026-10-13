@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resources - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .tab-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      padding: 0.6rem 1.25rem;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Resource Registry & Capacity</h1>
+          <p>Developers, lab hardware assets, and cloud compute pools</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-create-resource" class="btn btn-primary">+ Add Resource</button>
+        </div>
+      </div>
+
+      <!-- Type Tabs -->
+      <div class="tab-nav">
+        <button class="tab-btn active" data-type="DEVELOPER">Developers</button>
+        <button class="tab-btn" data-type="HARDWARE">Hardware Assets</button>
+        <button class="tab-btn" data-type="CLOUD">Cloud Compute</button>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr id="table-headers">
+                <th>Name</th>
+                <th>Skills & Tech</th>
+                <th>Hourly Rate</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="resources-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let currentTab = 'DEVELOPER';
+    let allResources = [];
+    let allSkills = [];
+
+    async function loadData() {
+      const tbody = document.getElementById('resources-table-body');
+      ui.renderLoading(tbody, 'Loading resource capacity records...');
+
+      try {
+        [allResources, allSkills] = await Promise.all([
+          api.get('/resources'),
+          api.get('/skills')
+        ]);
+        renderResources();
+      } catch (err) {
+        ui.renderError(tbody, err, loadData);
+      }
+    }
+
+    function renderResources() {
+      const tbody = document.getElementById('resources-table-body');
+      const filtered = allResources.filter(r => r.type === currentTab);
+
+      // Adjust headers per type
+      const thead = document.getElementById('table-headers');
+      if (currentTab === 'DEVELOPER') {
+        thead.innerHTML = `
+          <th>Developer Name</th>
+          <th>Skills (Level 1-5)</th>
+          <th>Rate (INR ₹/hr)</th>
+          <th>Capacity</th>
+          <th>Status</th>
+          <th>Actions</th>
+        `;
+      } else if (currentTab === 'HARDWARE') {
+        thead.innerHTML = `
+          <th>Asset Name</th>
+          <th>Asset Tag / Location</th>
+          <th>Daily Cost</th>
+          <th>Capacity</th>
+          <th>Status</th>
+          <th>Actions</th>
+        `;
+      } else {
+        thead.innerHTML = `
+          <th>Pool Name</th>
+          <th>Cloud Provider / Unit</th>
+          <th>Unit Cost & Quota</th>
+          <th>Monthly Cap</th>
+          <th>Status</th>
+          <th>Actions</th>
+        `;
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-subtle);">No ${currentTab.toLowerCase()} resources found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const statusBadge = r.status === 'ACTIVE'
+          ? '<span class="badge badge-green">ACTIVE</span>'
+          : '<span class="badge badge-red">INACTIVE</span>';
+
+        let col2 = '-';
+        let col3 = '-';
+        let col4 = `${r.capacityPct}%`;
+
+        if (r.type === 'DEVELOPER') {
+          col2 = r.skills && r.skills.length > 0
+            ? r.skills.map(s => `<span class="badge badge-neutral" style="margin:2px;">${ui.escapeHtml(s.name)} (L${s.proficiencyLevel})</span>`).join('')
+            : '<span style="color:var(--text-subtle);">No skills mapped</span>';
+          col3 = ui.formatCurrency(r.costPerHour);
+        } else if (r.type === 'HARDWARE') {
+          col2 = `<span style="font-weight:600;">${ui.escapeHtml(r.hardware?.assetTag || '')}</span> · ${ui.escapeHtml(r.hardware?.location || '')}`;
+          col3 = `${ui.formatCurrency(r.costPerDay)} / day`;
+        } else {
+          col2 = `${ui.escapeHtml(r.cloud?.provider || '')} · ${ui.escapeHtml(r.cloud?.unitType || '')}`;
+          col3 = `${ui.formatCurrency(r.costPerUnit)}/unit (Quota: ${r.dailyQuota || '∞'}/day)`;
+          col4 = ui.formatCurrency(r.monthlyCap);
+        }
+
+        return `
+          <tr>
+            <td><strong>${ui.escapeHtml(r.name)}</strong></td>
+            <td>${col2}</td>
+            <td>${col3}</td>
+            <td>${col4}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display:flex; gap:0.4rem;">
+                ${r.type === 'DEVELOPER' ? `<button class="btn btn-secondary btn-sm btn-skills" data-id="${r.id}" data-name="${ui.escapeHtml(r.name)}">Skills</button>` : ''}
+                <button class="btn btn-secondary btn-sm btn-edit" data-id="${r.id}">Edit</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-skills').forEach(btn => {
+        btn.onclick = () => openDeveloperSkillsModal(btn.dataset.id, btn.dataset.name);
+      });
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.onclick = () => openResourceModal(btn.dataset.id);
+      });
+    }
+
+    async function openDeveloperSkillsModal(resourceId, name) {
+      try {
+        const res = await api.get(`/resources/${resourceId}`);
+        const currentSkills = res.skills || [];
+        const currentMap = new Map(currentSkills.map(s => [s.id, s.proficiencyLevel]));
+
+        const skillsHtml = allSkills.map(s => {
+          const has = currentMap.has(s.id);
+          const lvl = has ? currentMap.get(s.id) : 2;
+
+          return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem; border-bottom:1px solid var(--border-color);">
+              <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                <input type="checkbox" class="res-skill-checkbox" data-skill-id="${s.id}" ${has ? 'checked' : ''}>
+                <span>${ui.escapeHtml(s.name)}</span>
+              </label>
+              <label style="font-size:0.75rem;">Level:
+                <select class="res-skill-level form-control" style="width:60px; padding:0.2rem; display:inline-block;" data-skill-id="${s.id}">
+                  <option value="1" ${lvl === 1 ? 'selected' : ''}>1</option>
+                  <option value="2" ${lvl === 2 ? 'selected' : ''}>2</option>
+                  <option value="3" ${lvl === 3 ? 'selected' : ''}>3</option>
+                  <option value="4" ${lvl === 4 ? 'selected' : ''}>4</option>
+                  <option value="5" ${lvl === 5 ? 'selected' : ''}>5</option>
+                </select>
+              </label>
+            </div>
+          `;
+        }).join('');
+
+        ui.showModal({
+          title: `Manage Skills · ${name}`,
+          bodyHtml: `<div style="max-height:350px; overflow-y:auto;">${skillsHtml}</div>`,
+          confirmText: 'Save Skills',
+          onConfirm: async (modal) => {
+            const skills = [];
+            modal.querySelectorAll('.res-skill-checkbox:checked').forEach(cb => {
+              const skillId = parseInt(cb.dataset.skillId);
+              const proficiencyLevel = parseInt(modal.querySelector(`.res-skill-level[data-skill-id="${skillId}"]`).value);
+              skills.push({ skillId, proficiencyLevel });
+            });
+
+            try {
+              await api.put(`/resources/${resourceId}/skills`, { skills });
+              ui.showToast('Developer skills saved successfully.', 'success');
+              loadData();
+              return true;
+            } catch (err) {
+              ui.showToast(err.message, 'error');
+              return false;
+            }
+          }
+        });
+
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    }
+
+    function openResourceModal(resourceId = null) {
+      const r = resourceId ? allResources.find(x => String(x.id) === String(resourceId)) : null;
+      const title = r ? `Edit Resource · ${r.name}` : `Add ${currentTab} Resource`;
+
+      ui.showModal({
+        title,
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="res-name">Resource Name</label>
+            <input type="text" id="res-name" class="form-control" value="${r ? ui.escapeHtml(r.name) : ''}" placeholder="e.g. Arun Kumar" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-type">Resource Type</label>
+            <select id="res-type" class="form-control" ${r ? 'disabled' : ''}>
+              <option value="DEVELOPER" ${currentTab === 'DEVELOPER' ? 'selected' : ''}>DEVELOPER</option>
+              <option value="HARDWARE" ${currentTab === 'HARDWARE' ? 'selected' : ''}>HARDWARE</option>
+              <option value="CLOUD" ${currentTab === 'CLOUD' ? 'selected' : ''}>CLOUD</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-capacity">Capacity (%)</label>
+            <input type="number" id="res-capacity" class="form-control" value="${r ? r.capacityPct : 100}" min="0" max="100" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-cost">Cost Rate (INR ₹)</label>
+            <input type="number" id="res-cost" class="form-control" value="${r ? (r.costPerHour || r.costPerDay || r.costPerUnit || 500) : 500}" min="0" required>
+            <div style="font-size:0.75rem; color:var(--text-subtle); margin-top:2px;">Rate per hour (Dev), per day (Hardware), or per unit (Cloud)</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="res-status">Status</label>
+            <select id="res-status" class="form-control">
+              <option value="ACTIVE" ${!r || r.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+              <option value="INACTIVE" ${r && r.status === 'INACTIVE' ? 'selected' : ''}>INACTIVE</option>
+            </select>
+          </div>
+        `,
+        confirmText: r ? 'Save Changes' : 'Create Resource',
+        onConfirm: async (modal) => {
+          const name = modal.querySelector('#res-name').value.trim();
+          const type = modal.querySelector('#res-type').value;
+          const capacityPct = parseInt(modal.querySelector('#res-capacity').value);
+          const cost = parseFloat(modal.querySelector('#res-cost').value);
+          const status = modal.querySelector('#res-status').value;
+
+          if (!name || isNaN(capacityPct) || isNaN(cost)) {
+            ui.showToast('Please fill all mandatory fields.', 'error');
+            return false;
+          }
+
+          const payload = {
+            name,
+            type,
+            capacityPct,
+            status,
+            costPerHour: type === 'DEVELOPER' ? cost : null,
+            costPerDay: type === 'HARDWARE' ? cost : null,
+            costPerUnit: type === 'CLOUD' ? cost : null
+          };
+
+          try {
+            if (r) {
+              await api.put(`/resources/${r.id}`, payload);
+              ui.showToast('Resource updated successfully.', 'success');
+            } else {
+              await api.post('/resources', payload);
+              ui.showToast('Resource created successfully.', 'success');
+            }
+            loadData();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.type;
+        renderResources();
+      };
+    });
+
+    document.getElementById('btn-create-resource').onclick = () => openResourceModal();
+
+    loadData();
+  </script>
+</body>
+</html>

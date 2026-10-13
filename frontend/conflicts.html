@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conflict Center - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Conflict Resolution Center</h1>
+          <p>Over-allocations, leave conflicts, skill gaps, burnout streaks, and budget risks</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-run-scan" class="btn btn-secondary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Run Conflict Scan
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+          <select id="filter-severity" class="form-control" style="max-width: 150px;">
+            <option value="">All Severities</option>
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="HIGH">HIGH</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="LOW">LOW</option>
+          </select>
+          <select id="filter-type" class="form-control" style="max-width: 200px;">
+            <option value="">All Conflict Types</option>
+            <option value="OVER_ALLOCATION">OVER_ALLOCATION</option>
+            <option value="LEAVE_CONFLICT">LEAVE_CONFLICT</option>
+            <option value="SKILL_GAP">SKILL_GAP</option>
+            <option value="SKILL_MISMATCH">SKILL_MISMATCH</option>
+            <option value="UNSTAFFED_MILESTONE">UNSTAFFED_MILESTONE</option>
+            <option value="BURNOUT_RISK">BURNOUT_RISK</option>
+            <option value="CLOUD_QUOTA">CLOUD_QUOTA</option>
+            <option value="BUDGET_RISK">BUDGET_RISK</option>
+          </select>
+          <select id="filter-status" class="form-control" style="max-width: 150px;">
+            <option value="">All Statuses</option>
+            <option value="OPEN" selected>OPEN</option>
+            <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+            <option value="RESOLVED">RESOLVED</option>
+          </select>
+          <button id="btn-filter" class="btn btn-secondary btn-sm">Filter</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Type</th>
+                <th>Entity / Project</th>
+                <th>Description</th>
+                <th>Impact Period</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="conflicts-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let allConflicts = [];
+
+    async function loadConflicts() {
+      const tbody = document.getElementById('conflicts-table-body');
+      ui.renderLoading(tbody, 'Scanning active schedule conflicts...');
+
+      const severity = document.getElementById('filter-severity').value;
+      const type = document.getElementById('filter-type').value;
+      const status = document.getElementById('filter-status').value;
+
+      let query = [];
+      if (severity) query.push(`severity=${severity}`);
+      if (type) query.push(`type=${type}`);
+      if (status) query.push(`status=${status}`);
+      const qs = query.length > 0 ? `?${query.join('&')}` : '';
+
+      try {
+        allConflicts = await api.get(`/conflicts${qs}`);
+        renderConflicts();
+      } catch (err) {
+        ui.renderError(tbody, err, loadConflicts);
+      }
+    }
+
+    function renderConflicts() {
+      const tbody = document.getElementById('conflicts-table-body');
+      if (!allConflicts || allConflicts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2.5rem; color:var(--text-subtle);">No conflicts match filter criteria.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = allConflicts.map(c => {
+        const sevBadge = c.severity === 'CRITICAL'
+          ? '<span class="badge badge-red">CRITICAL</span>'
+          : c.severity === 'HIGH'
+          ? '<span class="badge badge-amber">HIGH</span>'
+          : '<span class="badge badge-blue">MEDIUM</span>';
+
+        const statusBadge = c.status === 'RESOLVED'
+          ? '<span class="badge badge-green">RESOLVED</span>'
+          : c.status === 'ACKNOWLEDGED'
+          ? '<span class="badge badge-amber">ACKNOWLEDGED</span>'
+          : '<span class="badge badge-red">OPEN</span>';
+
+        return `
+          <tr>
+            <td>${sevBadge}</td>
+            <td><strong>${ui.escapeHtml(c.type)}</strong></td>
+            <td>
+              <div>${c.resourceName ? `<strong>${ui.escapeHtml(c.resourceName)}</strong>` : ''}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${c.projectName ? ui.escapeHtml(c.projectName) : ''}</div>
+            </td>
+            <td>
+              <div style="max-width: 400px; font-size: 0.85rem;">${ui.escapeHtml(c.description)}</div>
+            </td>
+            <td>${c.startDate ? `${ui.formatDate(c.startDate)} → ${ui.formatDate(c.endDate)}` : '-'}</td>
+            <td>${statusBadge}</td>
+            <td>
+              ${c.status === 'OPEN' ? `
+                <button class="btn btn-secondary btn-sm btn-ack" data-id="${c.id}">Acknowledge</button>
+              ` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-ack').forEach(btn => {
+        btn.onclick = async () => {
+          try {
+            await api.put(`/conflicts/${btn.dataset.id}/acknowledge`);
+            ui.showToast('Conflict marked as acknowledged.', 'info');
+            loadConflicts();
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+          }
+        };
+      });
+    }
+
+    document.getElementById('btn-run-scan').onclick = async () => {
+      const btn = document.getElementById('btn-run-scan');
+      btn.disabled = true;
+      btn.innerText = 'Scanning...';
+      try {
+        await api.post('/conflicts/scan');
+        ui.showToast('Full portfolio conflict scan completed!', 'success');
+        loadConflicts();
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Run Conflict Scan';
+      }
+    };
+
+    document.getElementById('btn-filter').onclick = loadConflicts;
+    document.getElementById('filter-severity').onchange = loadConflicts;
+    document.getElementById('filter-type').onchange = loadConflicts;
+    document.getElementById('filter-status').onchange = loadConflicts;
+
+    loadConflicts();
+  </script>
+</body>
+</html>

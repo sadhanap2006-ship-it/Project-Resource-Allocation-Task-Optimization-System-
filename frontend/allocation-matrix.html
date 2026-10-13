@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Allocation Matrix - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .matrix-table th, .matrix-table td {
+      text-align: center;
+      padding: 0.75rem 0.5rem;
+    }
+    .matrix-table th:first-child, .matrix-table td:first-child {
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background: var(--bg-card);
+      z-index: 2;
+    }
+    .matrix-cell-btn {
+      width: 100%;
+      min-width: 50px;
+      padding: 0.35rem 0.5rem;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+    .matrix-cell-btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-surface);
+      color: var(--primary);
+    }
+    .matrix-cell-btn.allocated {
+      border: 1px solid var(--primary);
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+    }
+    .candidate-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Resource Allocation Matrix</h1>
+          <p>Cross-milestone commitment grid, peak loads, and automated smart candidate matching</p>
+        </div>
+        <div class="page-actions">
+          <select id="select-project" class="form-control" style="min-width: 220px;">
+          </select>
+          <button id="btn-add-allocation" class="btn btn-primary">+ Allocate Resource</button>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="matrix-container" style="display: none;">
+        <!-- Matrix Grid Card -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <h3 class="card-title" id="matrix-proj-title">Project Matrix</h3>
+            <div style="display:flex; gap:0.5rem; font-size:0.75rem; align-items:center;">
+              <span>Peak Band:</span>
+              <span class="badge badge-low">LOW (&lt;50%)</span>
+              <span class="badge badge-healthy">HEALTHY (50-85%)</span>
+              <span class="badge badge-amber">HIGH (&gt;85-100%)</span>
+              <span class="badge badge-red">OVER (&gt;100%)</span>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table matrix-table" id="matrix-table">
+              <thead id="matrix-head"></thead>
+              <tbody id="matrix-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Find Best Candidate Panel -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title" style="display:inline-flex; align-items:center; gap:0.5rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Best Candidate Recommendation
+              </h3>
+              <p style="font-size:0.8rem; color:var(--text-subtle); margin-top:2px;">
+                Formula: score = 0.5×SkillMatch% + 0.3×Fit% + 0.2×Cheapness% (Rule R6 / Section 9.3)
+              </p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="candidate-milestone-select" class="form-control" style="width:220px;"></select>
+              <button id="btn-find-candidates" class="btn btn-secondary btn-sm">Rank Candidates</button>
+            </div>
+          </div>
+          <div id="candidates-container">
+            <div style="text-align:center; padding:1.5rem; color:var(--text-subtle);">Select a milestone and click "Rank Candidates" to view recommendations.</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let projects = [];
+    let currentMatrix = null;
+    let currentProjectId = null;
+
+    const params = new URLSearchParams(window.location.search);
+    const initialProjectId = params.get('projectId');
+
+    async function init() {
+      try {
+        projects = await api.get('/projects');
+        const select = document.getElementById('select-project');
+        select.innerHTML = projects.map(p => `
+          <option value="${p.id}" ${initialProjectId && String(p.id) === String(initialProjectId) ? 'selected' : ''}>
+            ${ui.escapeHtml(p.name)} (${p.code})
+          </option>
+        `).join('');
+
+        currentProjectId = select.value;
+        select.onchange = () => {
+          currentProjectId = select.value;
+          loadMatrix();
+        };
+
+        if (currentProjectId) {
+          loadMatrix();
+        }
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    }
+
+    async function loadMatrix() {
+      const loadState = document.getElementById('loading-state');
+      const content = document.getElementById('matrix-container');
+      ui.renderLoading(loadState, 'Generating cross-milestone matrix...');
+
+      try {
+        currentMatrix = await api.get(`/projects/${currentProjectId}/matrix`);
+        loadState.style.display = 'none';
+        content.style.display = 'block';
+
+        document.getElementById('matrix-proj-title').innerText = `${currentMatrix.projectName} · Allocation Matrix`;
+
+        // Render Milestones in candidate dropdown
+        const cSelect = document.getElementById('candidate-milestone-select');
+        cSelect.innerHTML = currentMatrix.milestones.map(m => `
+          <option value="${m.id}">${ui.escapeHtml(m.name)}</option>
+        `).join('');
+
+        renderMatrixTable();
+      } catch (err) {
+        ui.renderError(loadState, err, loadMatrix);
+      }
+    }
+
+    function renderMatrixTable() {
+      const thead = document.getElementById('matrix-head');
+      const tbody = document.getElementById('matrix-body');
+
+      // 1. Table Headers
+      let headHtml = `
+        <tr>
+          <th style="min-width: 180px;">Resource</th>
+      `;
+      currentMatrix.milestones.forEach(m => {
+        headHtml += `
+          <th style="min-width: 120px;">
+            <div>${ui.escapeHtml(m.name)}</div>
+            <div style="font-size:0.7rem; color:var(--text-subtle);">${ui.formatDate(m.startDate)} → ${ui.formatDate(m.endDate)}</div>
+          </th>
+        `;
+      });
+      headHtml += `
+          <th style="min-width: 100px;">Project %</th>
+          <th style="min-width: 100px;">Peak Load %</th>
+        </tr>
+      `;
+      thead.innerHTML = headHtml;
+
+      // 2. Table Rows
+      if (!currentMatrix.resources || currentMatrix.resources.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${currentMatrix.milestones.length + 3}" style="text-align:center; padding:2rem; color:var(--text-subtle);">No resources registered.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = currentMatrix.resources.map(r => {
+        const peakBadge = r.band === 'OVER'
+          ? `<span class="badge badge-red">${r.peakLoadPct}%</span>`
+          : r.band === 'HIGH'
+          ? `<span class="badge badge-amber">${r.peakLoadPct}%</span>`
+          : r.band === 'HEALTHY'
+          ? `<span class="badge badge-green">${r.peakLoadPct}%</span>`
+          : `<span class="badge badge-low">${r.peakLoadPct}%</span>`;
+
+        let rowHtml = `
+          <tr>
+            <td>
+              <div style="font-weight:600;">${ui.escapeHtml(r.resourceName)}</div>
+              <div style="font-size:0.7rem; color:var(--text-subtle);">${r.roleType}</div>
+            </td>
+        `;
+
+        currentMatrix.milestones.forEach(m => {
+          const val = r.allocations[m.id];
+          if (val) {
+            rowHtml += `
+              <td>
+                <button class="matrix-cell-btn allocated btn-edit-cell" data-resource-id="${r.resourceId}" data-milestone-id="${m.id}" data-pct="${val}">
+                  ${val}%
+                </button>
+              </td>
+            `;
+          } else {
+            rowHtml += `
+              <td>
+                <button class="matrix-cell-btn btn-add-cell" data-resource-id="${r.resourceId}" data-milestone-id="${m.id}">
+                  +
+                </button>
+              </td>
+            `;
+          }
+        });
+
+        rowHtml += `
+            <td><strong>${r.totalAllocatedPct}%</strong></td>
+            <td>${peakBadge}</td>
+          </tr>
+        `;
+
+        return rowHtml;
+      }).join('');
+
+      document.querySelectorAll('.btn-add-cell').forEach(btn => {
+        btn.onclick = () => openAllocationModal(btn.dataset.resourceId, btn.dataset.milestoneId);
+      });
+
+      document.querySelectorAll('.btn-edit-cell').forEach(btn => {
+        btn.onclick = () => openAllocationModal(btn.dataset.resourceId, btn.dataset.milestoneId, btn.dataset.pct);
+      });
+    }
+
+    async function openAllocationModal(resourceId = null, milestoneId = null, existingPct = null) {
+      const resList = await api.get('/resources');
+      const milestone = currentMatrix.milestones.find(m => String(m.id) === String(milestoneId));
+
+      const resOptions = resList.map(r => `
+        <option value="${r.id}" ${resourceId && String(r.id) === String(resourceId) ? 'selected' : ''}>
+          ${ui.escapeHtml(r.name)} (${r.type})
+        </option>
+      `).join('');
+
+      const mOptions = currentMatrix.milestones.map(m => `
+        <option value="${m.id}" ${milestoneId && String(m.id) === String(milestoneId) ? 'selected' : ''}>
+          ${ui.escapeHtml(m.name)}
+        </option>
+      `).join('');
+
+      const defaultStart = milestone ? milestone.startDate : '';
+      const defaultEnd = milestone ? milestone.endDate : '';
+
+      ui.showModal({
+        title: existingPct ? 'Update Allocation' : 'Create Allocation',
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="alloc-res">Resource</label>
+            <select id="alloc-res" class="form-control" ${existingPct ? 'disabled' : ''}>
+              ${resOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="alloc-ms">Milestone</label>
+            <select id="alloc-ms" class="form-control" ${existingPct ? 'disabled' : ''}>
+              ${mOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="alloc-pct">Allocation Percentage (%)</label>
+            <input type="number" id="alloc-pct" class="form-control" value="${existingPct || 50}" min="1" max="100" required>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="alloc-start">Start Date</label>
+              <input type="date" id="alloc-start" class="form-control" value="${defaultStart}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="alloc-end">End Date</label>
+              <input type="date" id="alloc-end" class="form-control" value="${defaultEnd}" required>
+            </div>
+          </div>
+        `,
+        confirmText: existingPct ? 'Save Allocation' : 'Assign Resource',
+        onConfirm: async (modal) => {
+          const rId = parseInt(modal.querySelector('#alloc-res').value);
+          const mId = parseInt(modal.querySelector('#alloc-ms').value);
+          const allocationPct = parseInt(modal.querySelector('#alloc-pct').value);
+          const startDate = modal.querySelector('#alloc-start').value;
+          const endDate = modal.querySelector('#alloc-end').value;
+
+          if (isNaN(allocationPct) || !startDate || !endDate) {
+            ui.showToast('Please specify valid dates and percentage.', 'error');
+            return false;
+          }
+
+          const payload = {
+            resourceId: rId,
+            milestoneId: mId,
+            allocationPct,
+            startDate,
+            endDate,
+            overrideConfirmed: false
+          };
+
+          return await submitAllocation(payload);
+        }
+      });
+    }
+
+    async function submitAllocation(payload) {
+      try {
+        await api.post('/allocations', payload);
+        ui.showToast('Resource allocated successfully.', 'success');
+        loadMatrix();
+        return true;
+      } catch (err) {
+        // Handle 409 Over-Allocation or Skill Mismatch Override per Section 8 / Rule R2 & R6
+        if (err.errorCode === 'RESOURCE_OVERALLOCATION' || err.errorCode === 'SKILL_MISMATCH') {
+          const confirmOverride = await ui.confirm(
+            `${err.message}\n\nDo you want to confirm and override this warning?`,
+            'Conflict Warning · Override Required'
+          );
+          if (confirmOverride) {
+            payload.overrideConfirmed = true;
+            try {
+              await api.post('/allocations', payload);
+              ui.showToast('Allocation confirmed with override.', 'warning');
+              loadMatrix();
+              return true;
+            } catch (err2) {
+              ui.showToast(err2.message, 'error');
+              return false;
+            }
+          }
+          return false;
+        } else {
+          ui.showToast(err.message, 'error');
+          return false;
+        }
+      }
+    }
+
+    document.getElementById('btn-find-candidates').onclick = async () => {
+      const milestoneId = document.getElementById('candidate-milestone-select').value;
+      if (!milestoneId) return;
+
+      const container = document.getElementById('candidates-container');
+      ui.renderLoading(container, 'Calculating skill match %, availability fit, and cost ranking...');
+
+      try {
+        const candidates = await api.get(`/milestones/${milestoneId}/candidates`);
+        if (!candidates || candidates.length === 0) {
+          container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No available candidates match criteria.</div>';
+          return;
+        }
+
+        container.innerHTML = candidates.map((c, idx) => {
+          const overloadBadge = c.wouldOverload
+            ? `<span class="badge badge-red">Overload Risk</span>`
+            : `<span class="badge badge-green">Fits Schedule</span>`;
+
+          return `
+            <div class="candidate-card">
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span class="badge badge-neutral">#${idx + 1}</span>
+                  <strong>${ui.escapeHtml(c.resourceName)}</strong>
+                  <span class="badge badge-blue">Score: ${Math.round(c.finalScore * 10) / 10}</span>
+                  ${overloadBadge}
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); display:flex; gap:1.25rem;">
+                  <span>Skill Match: <strong>${Math.round(c.skillMatchPct * 10) / 10}%</strong></span>
+                  <span>Availability Fit: <strong>${Math.round(c.availabilityFitPct * 10) / 10}%</strong></span>
+                  <span>Rate: <strong>${ui.formatCurrency(c.costPerHour)}/hr</strong></span>
+                </div>
+              </div>
+              <button class="btn btn-secondary btn-sm btn-assign-candidate" data-id="${c.resourceId}" data-ms="${milestoneId}">
+                Assign Candidate
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        container.querySelectorAll('.btn-assign-candidate').forEach(btn => {
+          btn.onclick = () => openAllocationModal(btn.dataset.id, btn.dataset.ms);
+        });
+
+      } catch (err) {
+        ui.renderError(container, err);
+      }
+    };
+
+    document.getElementById('btn-add-allocation').onclick = () => openAllocationModal();
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Details - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+            <a href="/projects.html" style="color:var(--text-muted);">&larr; Back to Projects</a>
+            <span style="color:var(--text-subtle);">/</span>
+            <span id="proj-code-badge" class="badge badge-neutral">-</span>
+          </div>
+          <h1 id="proj-name">Loading Project...</h1>
+          <p id="proj-desc">-</p>
+        </div>
+        <div class="page-actions">
+          <a id="link-matrix" href="#" class="btn btn-secondary">Allocation Matrix</a>
+          <a id="link-budget" href="#" class="btn btn-secondary">Budget & EVM</a>
+          <a id="link-timeline" href="#" class="btn btn-primary">Project Gantt</a>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="details-content" style="display: none;">
+        <!-- Budget & Timeline KPI Row -->
+        <div class="grid-kpi">
+          <div class="kpi-card">
+            <span class="kpi-label">Project Budget</span>
+            <div class="kpi-value" id="kpi-budget">-</div>
+            <div class="kpi-subtext" id="kpi-spend">- actual spend</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Budget Utilisation</span>
+            <div class="kpi-value" id="kpi-util">-</div>
+            <div class="kpi-subtext" id="kpi-burn-rate">-</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Timeline Window</span>
+            <div class="kpi-value" id="kpi-dates" style="font-size: 1.2rem;">-</div>
+            <div class="kpi-subtext" id="kpi-status">-</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Active Conflicts</span>
+            <div class="kpi-value" id="kpi-conflicts">-</div>
+            <div class="kpi-subtext" id="kpi-conflicts-sub">Involving this project</div>
+          </div>
+        </div>
+
+        <div class="grid-two-col" style="margin-bottom: 1.5rem;">
+          <!-- Milestones Table -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Project Milestones</h3>
+              <a href="/milestones.html" class="btn btn-secondary btn-sm">Manage Milestones</a>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Milestone</th>
+                    <th>Timeline</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="milestones-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Project Team Allocations -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Assigned Resources</h3>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Resource</th>
+                    <th>Milestone</th>
+                    <th>Commitment</th>
+                  </tr>
+                </thead>
+                <tbody id="team-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Conflicts -->
+        <div class="card" id="conflicts-card">
+          <div class="card-header">
+            <h3 class="card-title">Project Schedule & Resource Conflicts</h3>
+          </div>
+          <div id="conflicts-list" style="display:flex; flex-direction:column; gap:0.75rem;">
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id');
+
+    if (!projectId) {
+      window.location.replace('/projects.html');
+    }
+
+    document.getElementById('link-matrix').href = `/allocation-matrix.html?projectId=${projectId}`;
+    document.getElementById('link-budget').href = `/budget.html?projectId=${projectId}`;
+    document.getElementById('link-timeline').href = `/timeline.html?projectId=${projectId}`;
+
+    async function loadProjectDetails() {
+      const loadState = document.getElementById('loading-state');
+      const content = document.getElementById('details-content');
+      ui.renderLoading(loadState, 'Loading project telemetry...');
+
+      try {
+        const [project, milestones, budgetInfo, conflicts] = await Promise.all([
+          api.get(`/projects/${projectId}`),
+          api.get(`/projects/${projectId}/milestones`),
+          api.get(`/projects/${projectId}/budget`),
+          api.get(`/conflicts/project/${projectId}`)
+        ]);
+
+        loadState.style.display = 'none';
+        content.style.display = 'block';
+
+        document.getElementById('proj-code-badge').innerText = project.code;
+        document.getElementById('proj-name').innerText = project.name;
+        document.getElementById('proj-desc').innerText = project.description || 'No description provided.';
+
+        // KPI
+        document.getElementById('kpi-budget').innerText = ui.formatCurrency(project.totalBudget);
+        document.getElementById('kpi-spend').innerText = `${ui.formatCurrency(budgetInfo.actualSpend)} spent`;
+
+        const utilPct = budgetInfo.budgetUtilisationPct || 0;
+        document.getElementById('kpi-util').innerText = `${utilPct}%`;
+        document.getElementById('kpi-util').style.color = utilPct > 100 ? 'var(--danger)' : utilPct > 85 ? 'var(--warning)' : 'var(--text-main)';
+        document.getElementById('kpi-burn-rate').innerText = budgetInfo.burnRateDaily ? `${ui.formatCurrency(budgetInfo.burnRateDaily)}/day burn` : 'Burn rate: -';
+
+        document.getElementById('kpi-dates').innerText = `${ui.formatDate(project.startDate)} → ${ui.formatDate(project.endDate)}`;
+        document.getElementById('kpi-status').innerHTML = `<span class="badge ${project.status === 'ACTIVE' ? 'badge-green' : 'badge-neutral'}">${project.status}</span>`;
+
+        document.getElementById('kpi-conflicts').innerText = conflicts.length;
+        document.getElementById('kpi-conflicts').style.color = conflicts.length > 0 ? 'var(--danger)' : 'var(--text-main)';
+
+        // Milestones
+        const mBody = document.getElementById('milestones-table-body');
+        if (!milestones || milestones.length === 0) {
+          mBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No milestones configured.</td></tr>';
+        } else {
+          mBody.innerHTML = milestones.map(m => {
+            const statusBadge = m.status === 'COMPLETED' ? 'badge-green' : m.status === 'IN_PROGRESS' ? 'badge-amber' : 'badge-blue';
+            return `
+              <tr>
+                <td><strong>${ui.escapeHtml(m.name)}</strong></td>
+                <td>${ui.formatDate(m.startDate)} → ${ui.formatDate(m.endDate)}</td>
+                <td>
+                  <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div style="flex:1; background:var(--bg-surface); border-radius:4px; height:8px; overflow:hidden; min-width:50px;">
+                      <div style="background:var(--primary); width:${m.progressPct}%; height:100%;"></div>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:600;">${m.progressPct}%</span>
+                  </div>
+                </td>
+                <td><span class="badge ${statusBadge}">${m.status}</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // Team Allocations
+        const tBody = document.getElementById('team-table-body');
+        const allocs = await api.get(`/allocations?projectId=${projectId}`);
+        if (!allocs || allocs.length === 0) {
+          tBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No resource allocations yet.</td></tr>';
+        } else {
+          tBody.innerHTML = allocs.map(a => `
+            <tr>
+              <td><strong>${ui.escapeHtml(a.resourceName)}</strong></td>
+              <td>${ui.escapeHtml(a.milestoneName)}</td>
+              <td><span class="badge ${a.allocationPct > 80 ? 'badge-amber' : 'badge-blue'}">${a.allocationPct}%</span></td>
+            </tr>
+          `).join('');
+        }
+
+        // Conflicts
+        const cContainer = document.getElementById('conflicts-list');
+        if (!conflicts || conflicts.length === 0) {
+          document.getElementById('conflicts-card').style.display = 'none';
+        } else {
+          document.getElementById('conflicts-card').style.display = 'block';
+          cContainer.innerHTML = conflicts.map(c => `
+            <div style="background:var(--bg-surface); padding:0.75rem 1rem; border-radius:var(--radius-md); border-left:3px solid var(--danger);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                <span style="font-weight:600; color:var(--danger);">${ui.escapeHtml(c.type)}</span>
+                <span class="badge ${c.severity === 'CRITICAL' ? 'badge-red' : 'badge-amber'}">${c.severity}</span>
+              </div>
+              <div style="font-size:0.85rem; color:var(--text-main);">${ui.escapeHtml(c.description)}</div>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        ui.renderError(loadState, err, loadProjectDetails);
+      }
+    }
+
+    loadProjectDetails();
+  </script>
+</body>
+</html>

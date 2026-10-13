@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milestones - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Milestone Deliverables & Delivery Forecasts</h1>
+          <p>Track milestone completion, skill requirements, and delivery delay forecasts</p>
+        </div>
+        <div class="page-actions">
+          <select id="filter-project" class="form-control" style="max-width: 220px;">
+            <option value="">All Projects</option>
+          </select>
+          <button id="btn-create-milestone" class="btn btn-primary">+ Add Milestone</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Milestone Name</th>
+                <th>Dates</th>
+                <th>Effort</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Forecast Finish</th>
+                <th>Delay Risk</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="milestones-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let projects = [];
+    let milestones = [];
+
+    async function loadData() {
+      const tbody = document.getElementById('milestones-table-body');
+      ui.renderLoading(tbody, 'Loading milestones & calculating delivery speed factors...');
+
+      try {
+        projects = await api.get('/projects');
+        const projSelect = document.getElementById('filter-project');
+        projSelect.innerHTML = '<option value="">All Projects</option>' +
+          projects.map(p => `<option value="${p.id}">${ui.escapeHtml(p.name)} (${p.code})</option>`).join('');
+
+        milestones = await api.get('/milestones');
+        renderMilestones();
+      } catch (err) {
+        ui.renderError(tbody, err, loadData);
+      }
+    }
+
+    function renderMilestones() {
+      const tbody = document.getElementById('milestones-table-body');
+      const selectedProj = document.getElementById('filter-project').value;
+
+      const filtered = selectedProj ? milestones.filter(m => String(m.projectId) === String(selectedProj)) : milestones;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-subtle);">No milestones found.</td></tr>';
+        return;
+      }
+
+      const projMap = new Map(projects.map(p => [p.id, p]));
+
+      tbody.innerHTML = filtered.map(m => {
+        const p = projMap.get(m.projectId);
+        const statusBadge = m.status === 'COMPLETED' ? 'badge-green' : m.status === 'IN_PROGRESS' ? 'badge-amber' : 'badge-blue';
+
+        return `
+          <tr>
+            <td><strong>${ui.escapeHtml(p ? p.code : '-')}</strong></td>
+            <td>
+              <div style="font-weight:600;">${ui.escapeHtml(m.name)}</div>
+              <div style="font-size:0.75rem; color:var(--text-subtle);">${ui.escapeHtml(m.description || '')}</div>
+            </td>
+            <td>${ui.formatDate(m.startDate)} → ${ui.formatDate(m.endDate)}</td>
+            <td>${m.estimatedEffortHours}h</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div style="flex:1; background:var(--bg-surface); border-radius:4px; height:8px; overflow:hidden; min-width:50px;">
+                  <div style="background:var(--primary); width:${m.progressPct}%; height:100%;"></div>
+                </div>
+                <span style="font-size:0.75rem; font-weight:600;">${m.progressPct}%</span>
+              </div>
+            </td>
+            <td><span class="badge ${statusBadge}">${m.status}</span></td>
+            <td id="forecast-finish-${m.id}">Calculating...</td>
+            <td id="forecast-delay-${m.id}">-</td>
+            <td>
+              <div style="display:flex; gap:0.4rem;">
+                <button class="btn btn-secondary btn-sm btn-skills" data-id="${m.id}" data-name="${ui.escapeHtml(m.name)}">Skills</button>
+                <button class="btn btn-secondary btn-sm btn-edit" data-id="${m.id}">Edit</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Fetch dynamic forecast for each milestone
+      filtered.forEach(async (m) => {
+        const finishCell = document.getElementById(`forecast-finish-${m.id}`);
+        const delayCell = document.getElementById(`forecast-delay-${m.id}`);
+        if (!finishCell) return;
+
+        try {
+          const fc = await api.get(`/milestones/${m.id}/forecast`);
+          if (m.status === 'COMPLETED') {
+            finishCell.innerHTML = '<span style="color:var(--text-subtle);">Completed</span>';
+            delayCell.innerHTML = '<span class="badge badge-green">Done</span>';
+          } else if (fc.forecastFinishDate) {
+            finishCell.innerText = ui.formatDate(fc.forecastFinishDate);
+            if (fc.delayWorkingDays > 0) {
+              delayCell.innerHTML = `<span class="badge badge-red">+${fc.delayWorkingDays}d Delay</span>`;
+            } else {
+              delayCell.innerHTML = `<span class="badge badge-green">On Schedule</span>`;
+            }
+          } else {
+            finishCell.innerHTML = '<span style="color:var(--danger);">No active velocity</span>';
+            delayCell.innerHTML = `<span class="badge badge-red">Unstaffed</span>`;
+          }
+        } catch (_) {
+          finishCell.innerText = '-';
+          delayCell.innerText = '-';
+        }
+      });
+
+      document.querySelectorAll('.btn-skills').forEach(btn => {
+        btn.onclick = () => openSkillsModal(btn.dataset.id, btn.dataset.name);
+      });
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.onclick = () => openMilestoneModal(btn.dataset.id);
+      });
+    }
+
+    async function openSkillsModal(milestoneId, name) {
+      try {
+        const [allSkills, reqs] = await Promise.all([
+          api.get('/skills'),
+          api.get(`/milestones/${milestoneId}/skills`)
+        ]);
+
+        const reqMap = new Map(reqs.map(r => [r.skillId, r]));
+
+        const skillsHtml = allSkills.map(s => {
+          const req = reqMap.get(s.id);
+          const checked = !!req;
+          const minLevel = req ? req.minProficiencyLevel : 2;
+          const isMandatory = req ? req.isMandatory : true;
+
+          return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem; border-bottom:1px solid var(--border-color);">
+              <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                <input type="checkbox" class="skill-checkbox" data-skill-id="${s.id}" ${checked ? 'checked' : ''}>
+                <span>${ui.escapeHtml(s.name)}</span>
+              </label>
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <label style="font-size:0.75rem;">Min Level:
+                  <select class="skill-level form-control" style="width:60px; padding:0.2rem; display:inline-block;" data-skill-id="${s.id}">
+                    <option value="1" ${minLevel === 1 ? 'selected' : ''}>1</option>
+                    <option value="2" ${minLevel === 2 ? 'selected' : ''}>2</option>
+                    <option value="3" ${minLevel === 3 ? 'selected' : ''}>3</option>
+                    <option value="4" ${minLevel === 4 ? 'selected' : ''}>4</option>
+                    <option value="5" ${minLevel === 5 ? 'selected' : ''}>5</option>
+                  </select>
+                </label>
+                <label style="font-size:0.75rem;">
+                  <input type="checkbox" class="skill-mandatory" data-skill-id="${s.id}" ${isMandatory ? 'checked' : ''}> Mandatory
+                </label>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        ui.showModal({
+          title: `Required Skills · ${name}`,
+          bodyHtml: `<div style="max-height:350px; overflow-y:auto;">${skillsHtml}</div>`,
+          confirmText: 'Save Requirements',
+          onConfirm: async (modal) => {
+            const requirements = [];
+            modal.querySelectorAll('.skill-checkbox:checked').forEach(cb => {
+              const skillId = parseInt(cb.dataset.skillId);
+              const minProficiencyLevel = parseInt(modal.querySelector(`.skill-level[data-skill-id="${skillId}"]`).value);
+              const isMandatory = modal.querySelector(`.skill-mandatory[data-skill-id="${skillId}"]`).checked;
+              requirements.push({ skillId, minProficiencyLevel, isMandatory });
+            });
+
+            try {
+              await api.put(`/milestones/${milestoneId}/skills`, { requirements });
+              ui.showToast('Skill requirements updated successfully.', 'success');
+              return true;
+            } catch (err) {
+              ui.showToast(err.message, 'error');
+              return false;
+            }
+          }
+        });
+
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    }
+
+    function openMilestoneModal(milestoneId = null) {
+      const m = milestoneId ? milestones.find(x => String(x.id) === String(milestoneId)) : null;
+      const title = m ? `Edit Milestone · ${m.name}` : 'Add Milestone';
+
+      const projOptions = projects.map(p => `
+        <option value="${p.id}" ${m && m.projectId === p.id ? 'selected' : ''}>${ui.escapeHtml(p.name)} (${p.code})</option>
+      `).join('');
+
+      ui.showModal({
+        title,
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="ms-proj">Project</label>
+            <select id="ms-proj" class="form-control" ${m ? 'disabled' : ''}>
+              ${projOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ms-name">Milestone Name</label>
+            <input type="text" id="ms-name" class="form-control" value="${m ? ui.escapeHtml(m.name) : ''}" placeholder="e.g. Auth System API" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ms-desc">Description</label>
+            <textarea id="ms-desc" class="form-control" rows="2">${m ? ui.escapeHtml(m.description || '') : ''}</textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="ms-start">Start Date</label>
+              <input type="date" id="ms-start" class="form-control" value="${m ? m.startDate : ''}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ms-end">End Date</label>
+              <input type="date" id="ms-end" class="form-control" value="${m ? m.endDate : ''}" required>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="ms-effort">Estimated Effort (Hours)</label>
+              <input type="number" id="ms-effort" class="form-control" value="${m ? m.estimatedEffortHours : 160}" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ms-status">Status</label>
+              <select id="ms-status" class="form-control">
+                <option value="PLANNED" ${m && m.status === 'PLANNED' ? 'selected' : ''}>PLANNED</option>
+                <option value="IN_PROGRESS" ${m && m.status === 'IN_PROGRESS' ? 'selected' : ''}>IN_PROGRESS</option>
+                <option value="COMPLETED" ${m && m.status === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+              </select>
+            </div>
+          </div>
+        `,
+        confirmText: m ? 'Save Changes' : 'Create Milestone',
+        onConfirm: async (modal) => {
+          const projectId = parseInt(modal.querySelector('#ms-proj').value);
+          const name = modal.querySelector('#ms-name').value.trim();
+          const description = modal.querySelector('#ms-desc').value.trim();
+          const startDate = modal.querySelector('#ms-start').value;
+          const endDate = modal.querySelector('#ms-end').value;
+          const estimatedEffortHours = parseFloat(modal.querySelector('#ms-effort').value);
+          const status = modal.querySelector('#ms-status').value;
+
+          if (!name || !startDate || !endDate || isNaN(estimatedEffortHours)) {
+            ui.showToast('Please fill all mandatory fields.', 'error');
+            return false;
+          }
+
+          try {
+            if (m) {
+              await api.put(`/milestones/${m.id}`, { name, description, startDate, endDate, estimatedEffortHours, status });
+              ui.showToast('Milestone updated successfully.', 'success');
+            } else {
+              await api.post(`/projects/${projectId}/milestones`, { name, description, startDate, endDate, estimatedEffortHours, status });
+              ui.showToast('Milestone created successfully.', 'success');
+            }
+            loadData();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-create-milestone').onclick = () => openMilestoneModal();
+    document.getElementById('filter-project').onchange = renderMilestones;
+
+    loadData();
+  </script>
+</body>
+</html>

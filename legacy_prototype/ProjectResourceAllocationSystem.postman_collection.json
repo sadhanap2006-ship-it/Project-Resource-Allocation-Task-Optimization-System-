@@ -1,0 +1,541 @@
+{
+  "info": {
+    "_postman_id": "8f2a1b94-5c91-4c17-91fa-2c26f0f5b9d1",
+    "name": "Project Resource Allocation System — REST API",
+    "description": "SIST CSE AI Capstone Project: Comprehensive Postman API collection for all REST endpoints of the Pure Java HTTP Server.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login as Project Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@company.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login as Developer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"arun@company.com\",\n  \"password\": \"dev123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Dashboard & Portals",
+      "item": [
+        {
+          "name": "Get Manager Dashboard Metrics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/manager",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "manager"]
+            }
+          }
+        },
+        {
+          "name": "Get Developer Portal Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/developer/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "developer", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Conflict Center & Skill Gaps",
+      "item": [
+        {
+          "name": "Get Evaluated System Conflicts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/conflicts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "conflicts"]
+            }
+          }
+        },
+        {
+          "name": "Get Milestone Skill Gaps",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/skill-gaps",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "skill-gaps"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Projects & Budgets",
+      "item": [
+        {
+          "name": "List All Projects",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "Get Project By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Budget Analysis",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/budget",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "1", "budget"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Milestones",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1/milestones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "1", "milestones"]
+            }
+          }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Project Epsilon — Micro-Frontend Platform\",\n  \"description\": \"Decoupled web component framework\",\n  \"startDate\": \"2026-11-15\",\n  \"endDate\": \"2027-03-31\",\n  \"totalBudget\": 550000.00,\n  \"currentSpend\": 0.00,\n  \"status\": \"PLANNED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            }
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\",\n  \"totalBudget\": 580000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Milestones",
+      "item": [
+        {
+          "name": "List All Milestones",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "milestones"]
+            }
+          }
+        },
+        {
+          "name": "Get Milestone By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "milestones", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Milestone",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": 1,\n  \"name\": \"Gateway Load Balancing\",\n  \"description\": \"NGINX and Envoy gateway rate-limiting configuration\",\n  \"startDate\": \"2026-10-15\",\n  \"endDate\": \"2026-11-05\",\n  \"estimatedEffortHours\": 60.0,\n  \"progressPercentage\": 0,\n  \"status\": \"NOT_STARTED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "milestones"]
+            }
+          }
+        },
+        {
+          "name": "Update Milestone",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progressPercentage\": 80,\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/milestones/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "milestones", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Resources & Developers",
+      "item": [
+        {
+          "name": "List All Resources",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "developers"]
+            }
+          }
+        },
+        {
+          "name": "Get Resource By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "developers", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Resource Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Karthik Raja\",\n  \"email\": \"karthik@company.com\",\n  \"roleTitle\": \"Full-Stack Cloud Architect\",\n  \"department\": \"Engineering\",\n  \"hourlyCost\": 850.00,\n  \"availabilityPercentage\": 100,\n  \"skillIds\": [1, 2, 5, 6]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/developers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "developers"]
+            }
+          }
+        },
+        {
+          "name": "Update Resource Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hourlyCost\": 900.00,\n  \"availabilityPercentage\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/developers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "developers", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Resource Allocations",
+      "item": [
+        {
+          "name": "List All Allocations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "allocations"]
+            }
+          }
+        },
+        {
+          "name": "Assign Resource to Milestone",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 4,\n  \"milestoneId\": 1,\n  \"allocationPercentage\": 40\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "allocations"]
+            }
+          }
+        },
+        {
+          "name": "Delete Allocation",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "allocations", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Leave & Availability",
+      "item": [
+        {
+          "name": "List All Leave Records",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/availability",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "availability"]
+            }
+          }
+        },
+        {
+          "name": "Schedule Planned Leave",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"developerId\": 1,\n  \"startDate\": \"2026-11-20\",\n  \"endDate\": \"2026-11-25\",\n  \"reason\": \"Personal Leave / Conference Attendance\",\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/availability",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "availability"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Leave",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/availability/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "availability", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Skills",
+      "item": [
+        {
+          "name": "List All Skills",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "skills"]
+            }
+          }
+        },
+        {
+          "name": "Create Skill",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"GraphQL\",\n  \"category\": \"Backend\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "skills"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. In-App Notifications",
+      "item": [
+        {
+          "name": "List All Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications"]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/1/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "1", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "read-all"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. What-If Simulator",
+      "item": [
+        {
+          "name": "Run In-Memory Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milestoneId\": 1,\n  \"currentDeveloperId\": 2,\n  \"proposedDeveloperId\": 1,\n  \"allocationPercentage\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "simulations"]
+            }
+          }
+        },
+        {
+          "name": "Get Simulation Scenario",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/1001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "simulations", "1001"]
+            }
+          }
+        },
+        {
+          "name": "Apply Simulation Swap to Real Schedule",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/1001/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "simulations", "1001", "apply"]
+            }
+          }
+        },
+        {
+          "name": "Export Simulation PDF Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/simulations/1001/report",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "simulations", "1001", "report"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

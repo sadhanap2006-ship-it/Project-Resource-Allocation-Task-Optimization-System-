@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Dashboard - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Project Portfolio & Resource Health</h1>
+          <p>Real-time cross-project resource utilization, delivery risks, and active conflicts</p>
+        </div>
+        <div class="page-actions">
+          <a href="/simulator.html" class="btn btn-secondary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+            Run Simulation
+          </a>
+          <a href="/projects.html" class="btn btn-primary">+ Manage Projects</a>
+        </div>
+      </div>
+
+      <div id="loading-state"></div>
+      <div id="dashboard-content" style="display: none;">
+        <!-- KPI Cards -->
+        <div class="grid-kpi">
+          <div class="kpi-card">
+            <span class="kpi-label">Active Projects</span>
+            <div class="kpi-value" id="kpi-projects">-</div>
+            <div class="kpi-subtext" id="kpi-at-risk">- at risk</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Dev Utilisation</span>
+            <div class="kpi-value" id="kpi-util">-</div>
+            <div class="kpi-subtext">Active developers today</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Open Conflicts</span>
+            <div class="kpi-value" id="kpi-conflicts">-</div>
+            <div class="kpi-subtext" id="kpi-conflicts-sub">- critical / high</div>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Skill Gaps</span>
+            <div class="kpi-value" id="kpi-skill-gaps">-</div>
+            <div class="kpi-subtext">Unstaffed or missing skills</div>
+          </div>
+        </div>
+
+        <!-- Project Portfolio Health Table -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <h3 class="card-title">Project Portfolio Status</h3>
+            <a href="/projects.html" class="btn btn-secondary btn-sm">View All Projects</a>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Project Name</th>
+                  <th>Health</th>
+                  <th>Progress</th>
+                  <th>Budget Spent</th>
+                  <th>Budget Utilisation</th>
+                  <th>Run-Out Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="projects-table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid-two-col">
+          <!-- Upcoming Deadlines -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Upcoming Milestone Deadlines (Next 14 Days)</h3>
+              <a href="/timeline.html" class="btn btn-secondary btn-sm">Gantt View</a>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Milestone</th>
+                    <th>Project</th>
+                    <th>Deadline</th>
+                    <th>Progress</th>
+                    <th>Forecast</th>
+                  </tr>
+                </thead>
+                <tbody id="deadlines-table-body">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Latest Notifications -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Recent Conflict Alerts</h3>
+              <a href="/notifications.html" class="btn btn-secondary btn-sm">View All</a>
+            </div>
+            <div id="notifications-list" style="display:flex; flex-direction:column; gap:0.75rem;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    async function loadDashboard() {
+      const loadState = document.getElementById('loading-state');
+      const content = document.getElementById('dashboard-content');
+      ui.renderLoading(loadState, 'Calculating portfolio health and active allocations...');
+
+      try {
+        const data = await api.get('/dashboard/pm');
+        loadState.style.display = 'none';
+        content.style.display = 'block';
+
+        // 1. KPI Cards
+        document.getElementById('kpi-projects').innerText = `${data.activeProjects} / ${data.totalProjects}`;
+        document.getElementById('kpi-at-risk').innerText = `${data.atRiskProjects} project(s) at risk`;
+        document.getElementById('kpi-at-risk').style.color = data.atRiskProjects > 0 ? 'var(--danger)' : 'var(--text-subtle)';
+
+        document.getElementById('kpi-util').innerText = `${data.averageUtilisation}%`;
+        const crit = data.openConflictsBySeverity?.CRITICAL || 0;
+        const high = data.openConflictsBySeverity?.HIGH || 0;
+        const med = data.openConflictsBySeverity?.MEDIUM || 0;
+        const low = data.openConflictsBySeverity?.LOW || 0;
+        const totalConflicts = crit + high + med + low;
+
+        document.getElementById('kpi-conflicts').innerText = totalConflicts;
+        document.getElementById('kpi-conflicts-sub').innerText = `${crit} critical · ${high} high`;
+        document.getElementById('kpi-conflicts-sub').style.color = crit > 0 ? 'var(--danger)' : high > 0 ? 'var(--warning)' : 'var(--text-subtle)';
+
+        document.getElementById('kpi-skill-gaps').innerText = data.skillGapsCount;
+
+        // 2. Project Health Rows
+        const tbody = document.getElementById('projects-table-body');
+        if (!data.projects || data.projects.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No projects defined.</td></tr>';
+        } else {
+          tbody.innerHTML = data.projects.map(p => {
+            const healthBadge = p.health === 'RED'
+              ? '<span class="badge badge-red">● RED (Critical)</span>'
+              : p.health === 'AMBER'
+              ? '<span class="badge badge-amber">● AMBER (Warning)</span>'
+              : '<span class="badge badge-green">● GREEN (Healthy)</span>';
+
+            const runOutStr = p.runOutDate ? ui.formatDate(p.runOutDate) : '<span style="color:var(--text-subtle);">Within budget</span>';
+
+            return `
+              <tr>
+                <td><strong>${ui.escapeHtml(p.code)}</strong></td>
+                <td><a href="/project-details.html?id=${p.id}">${ui.escapeHtml(p.name)}</a></td>
+                <td>${healthBadge}</td>
+                <td>
+                  <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div style="flex:1; background:var(--bg-surface); border-radius:4px; height:8px; overflow:hidden; min-width:60px;">
+                      <div style="background:var(--primary); width:${Math.min(100, p.progressPct)}%; height:100%;"></div>
+                    </div>
+                    <span style="font-size:0.8rem; font-weight:600;">${p.progressPct}%</span>
+                  </div>
+                </td>
+                <td>${ui.formatCurrency(p.actualSpend)} <span style="font-size:0.75rem; color:var(--text-subtle);">/ ${ui.formatCurrency(p.totalBudget)}</span></td>
+                <td>
+                  <span class="badge ${p.budgetUtilisationPct > 100 ? 'badge-red' : p.budgetUtilisationPct > 85 ? 'badge-amber' : 'badge-neutral'}">
+                    ${p.budgetUtilisationPct}%
+                  </span>
+                </td>
+                <td>${runOutStr}</td>
+                <td>
+                  <div style="display:flex; gap:0.4rem; align-items:center; white-space:nowrap;">
+                    <a href="/allocation-matrix.html?projectId=${p.id}" class="btn btn-secondary btn-sm" title="Matrix">Matrix</a>
+                    <a href="/project-details.html?id=${p.id}" class="btn btn-secondary btn-sm" title="Details">Details</a>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 3. Upcoming Deadlines
+        const dBody = document.getElementById('deadlines-table-body');
+        if (!data.upcomingDeadlines || data.upcomingDeadlines.length === 0) {
+          dBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No milestones due within the next 14 days.</td></tr>';
+        } else {
+          dBody.innerHTML = data.upcomingDeadlines.map(d => {
+            const delayStr = d.delayDays > 0
+              ? `<span class="badge badge-red">+${d.delayDays}d delay</span>`
+              : `<span class="badge badge-green">On Schedule</span>`;
+
+            return `
+              <tr>
+                <td><strong>${ui.escapeHtml(d.milestoneName)}</strong></td>
+                <td><span style="color:var(--text-muted);">${ui.escapeHtml(d.projectName)}</span></td>
+                <td>${ui.formatDate(d.endDate)}</td>
+                <td>${d.progressPct}%</td>
+                <td>${delayStr}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 4. Recent Notifications
+        const notifContainer = document.getElementById('notifications-list');
+        if (!data.latestNotifications || data.latestNotifications.length === 0) {
+          notifContainer.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-subtle);">No recent alerts.</div>';
+        } else {
+          notifContainer.innerHTML = data.latestNotifications.map(n => {
+            const badgeClass = n.type === 'CRITICAL' ? 'badge-red' : n.type === 'HIGH' ? 'badge-amber' : 'badge-blue';
+            return `
+              <div style="background:var(--bg-surface); padding:0.75rem 1rem; border-radius:var(--radius-md); border-left:3px solid ${n.type === 'CRITICAL' ? 'var(--danger)' : n.type === 'HIGH' ? 'var(--warning)' : 'var(--primary)'};">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+                  <span style="font-weight:600; font-size:0.85rem;">${ui.escapeHtml(n.title)}</span>
+                  <span class="badge ${badgeClass}">${ui.escapeHtml(n.type)}</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">${ui.escapeHtml(n.message)}</div>
+              </div>
+            `;
+          }).join('');
+        }
+
+      } catch (err) {
+        ui.renderError(loadState, err, loadDashboard);
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

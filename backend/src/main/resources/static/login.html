@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script type="module" src="/js/theme.js"></script>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, #0b0f19 100%);
+      padding: 1.5rem;
+      min-height: 100vh;
+      position: relative;
+    }
+    [data-theme="light"] body {
+      background: radial-gradient(circle at 50% 20%, #f1f5f9 0%, #e2e8f0 100%);
+    }
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+    }
+    .login-brand {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .login-logo {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 22px;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .demo-accounts {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .demo-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .demo-chip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .demo-chip:hover {
+      background: var(--primary-surface);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .login-theme-toggle {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.4rem 0.8rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-fast);
+    }
+    .login-theme-toggle:hover {
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <button id="login-theme-btn" class="login-theme-toggle" type="button" title="Toggle Light/Dark Theme">
+    <span id="login-theme-icon" style="display:inline-flex; align-items:center;"></span>
+    <span id="login-theme-label">Dark Mode</span>
+  </button>
+
+  <div class="login-container">
+    <div class="login-brand">
+      <div class="login-logo">PR</div>
+      <h1>Project Resource Optimizer</h1>
+      <p>SIST CSE Capstone · Intelligent Task & Resource Allocation</p>
+    </div>
+
+    <div class="card">
+      <form id="login-form">
+        <div id="login-error" style="display:none; background:var(--danger-surface); border:1px solid rgba(239, 68, 68, 0.3); color:#fca5a5; padding:0.75rem; border-radius:var(--radius-md); margin-bottom:1rem; font-size:0.85rem;"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="name@prs.local" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="btn-submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 0.7rem;">
+          Sign In
+        </button>
+      </form>
+
+      <div class="demo-accounts">
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-subtle); font-weight: 600;">Quick-fill Demo Credentials (password: password123)</div>
+        <div class="demo-chips">
+          <button type="button" class="demo-chip" data-email="pm@prs.local" data-pass="password123">Project Manager (Meena)</button>
+          <button type="button" class="demo-chip" data-email="arun@prs.local" data-pass="password123">Developer (Arun)</button>
+          <button type="button" class="demo-chip" data-email="admin@prs.local" data-pass="password123">Administrator</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { getStoredTheme, toggleTheme } from '/js/theme.js';
+
+    const form = document.getElementById('login-form');
+    const errBox = document.getElementById('login-error');
+    const btnSubmit = document.getElementById('btn-submit');
+    const themeBtn = document.getElementById('login-theme-btn');
+    const themeIcon = document.getElementById('login-theme-icon');
+    const themeLabel = document.getElementById('login-theme-label');
+
+    const sunSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+    const moonSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
+    function syncLoginThemeUI() {
+      const current = getStoredTheme();
+      const isLight = current === 'light';
+      themeIcon.innerHTML = isLight ? sunSvg : moonSvg;
+      themeLabel.innerText = isLight ? 'Light Mode' : 'Dark Mode';
+    }
+
+    syncLoginThemeUI();
+    themeBtn?.addEventListener('click', () => {
+      toggleTheme();
+      syncLoginThemeUI();
+    });
+
+    // Check if redirected due to expired session
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('expired') === 'true') {
+      errBox.innerText = 'Your session has expired. Please sign in again.';
+      errBox.style.display = 'block';
+    }
+
+    // Quick-fill helper
+    document.querySelectorAll('.demo-chip').forEach(btn => {
+      btn.onclick = () => {
+        errBox.style.display = 'none';
+        document.getElementById('email').value = btn.dataset.email;
+        document.getElementById('password').value = btn.dataset.pass;
+      };
+    });
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      errBox.style.display = 'none';
+      btnSubmit.disabled = true;
+      btnSubmit.innerText = 'Signing in...';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const user = await api.post('/auth/login', { email, password });
+        if (user && user.token) {
+          localStorage.setItem('prs_jwt_token', user.token);
+        }
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect');
+
+        if (redirect && !redirect.includes('login')) {
+          window.location.href = redirect;
+        } else if (user.role === 'DEVELOPER') {
+          window.location.href = '/dev-dashboard.html';
+        } else {
+          window.location.href = '/pm-dashboard.html';
+        }
+      } catch (err) {
+        errBox.innerText = err.message || 'Invalid email or password.';
+        errBox.style.display = 'block';
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = 'Sign In';
+      }
+    };
+  </script>
+</body>
+</html>

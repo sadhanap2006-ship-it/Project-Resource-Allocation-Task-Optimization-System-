@@ -1,0 +1,24 @@
+# Compiled Java class files
+*.class
+backend/bin/
+bin/
+
+# Temporary and log files
+*.log
+sources.txt
+sources_src.txt
+sources_test.txt
+.system_generated/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS specific
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Projects Management</h1>
+          <p>Configure cross-project timelines, budgets, and milestone deliverables</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-create-project" class="btn btn-primary">+ Create Project</button>
+        </div>
+      </div>
+
+      <!-- Filters & Search Toolbar -->
+      <div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+          <input type="text" id="filter-search" class="form-control" placeholder="Search by name or code..." style="max-width: 300px;">
+          <select id="filter-status" class="form-control" style="max-width: 180px;">
+            <option value="">All Statuses</option>
+            <option value="ACTIVE" selected>ACTIVE</option>
+            <option value="PLANNED">PLANNED</option>
+            <option value="COMPLETED">COMPLETED</option>
+            <option value="ARCHIVED">ARCHIVED</option>
+          </select>
+          <button id="btn-refresh" class="btn btn-secondary btn-sm">Refresh</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Project Name</th>
+                <th>Status</th>
+                <th>Timeline</th>
+                <th>Total Budget</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="projects-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    await requireAuth(['PM', 'ADMIN']);
+
+    let allProjects = [];
+
+    async function loadProjects() {
+      const tbody = document.getElementById('projects-table-body');
+      ui.renderLoading(tbody, 'Loading projects...');
+
+      try {
+        allProjects = await api.get('/projects');
+        renderFilteredProjects();
+      } catch (err) {
+        ui.renderError(tbody, err, loadProjects);
+      }
+    }
+
+    function renderFilteredProjects() {
+      const tbody = document.getElementById('projects-table-body');
+      const search = document.getElementById('filter-search').value.toLowerCase().trim();
+      const statusFilter = document.getElementById('filter-status').value;
+
+      const filtered = allProjects.filter(p => {
+        const matchesSearch = !search || p.name.toLowerCase().includes(search) || p.code.toLowerCase().includes(search);
+        const matchesStatus = !statusFilter || p.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-subtle);">No projects match criteria.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        const statusBadge = p.status === 'ACTIVE'
+          ? '<span class="badge badge-green">ACTIVE</span>'
+          : p.status === 'PLANNED'
+          ? '<span class="badge badge-blue">PLANNED</span>'
+          : p.status === 'COMPLETED'
+          ? '<span class="badge badge-neutral">COMPLETED</span>'
+          : '<span class="badge badge-red">ARCHIVED</span>';
+
+        return `
+          <tr>
+            <td><strong>${ui.escapeHtml(p.code)}</strong></td>
+            <td>
+              <a href="/project-details.html?id=${p.id}" style="font-weight:600;">${ui.escapeHtml(p.name)}</a>
+              <div style="font-size:0.75rem; color:var(--text-subtle);">${ui.escapeHtml(p.description || '')}</div>
+            </td>
+            <td>${statusBadge}</td>
+            <td>${ui.formatDate(p.startDate)} → ${ui.formatDate(p.endDate)}</td>
+            <td><strong>${ui.formatCurrency(p.totalBudget)}</strong></td>
+            <td>
+              <div style="display:flex; gap:0.4rem;">
+                <a href="/project-details.html?id=${p.id}" class="btn btn-secondary btn-sm">Details</a>
+                <a href="/allocation-matrix.html?projectId=${p.id}" class="btn btn-secondary btn-sm">Matrix</a>
+                <button class="btn btn-secondary btn-sm btn-edit" data-id="${p.id}">Edit</button>
+                ${p.status !== 'ARCHIVED' ? `<button class="btn btn-secondary btn-sm btn-archive" data-id="${p.id}" data-name="${ui.escapeHtml(p.name)}" style="color:var(--danger);">Archive</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.onclick = () => openProjectModal(btn.dataset.id);
+      });
+
+      document.querySelectorAll('.btn-archive').forEach(btn => {
+        btn.onclick = async () => {
+          const ok = await ui.confirm(`Are you sure you want to archive project "${btn.dataset.name}"? This will pause allocations.`, 'Archive Project');
+          if (ok) {
+            try {
+              await api.delete(`/projects/${btn.dataset.id}`);
+              ui.showToast('Project archived successfully.', 'success');
+              loadProjects();
+            } catch (err) {
+              ui.showToast(err.message, 'error');
+            }
+          }
+        };
+      });
+    }
+
+    function openProjectModal(projectId = null) {
+      const p = projectId ? allProjects.find(x => String(x.id) === String(projectId)) : null;
+      const title = p ? `Edit Project · ${p.code}` : 'Create New Project';
+
+      ui.showModal({
+        title,
+        bodyHtml: `
+          <div class="form-group">
+            <label class="form-label" for="proj-code">Project Code</label>
+            <input type="text" id="proj-code" class="form-control" value="${p ? ui.escapeHtml(p.code) : ''}" placeholder="e.g. DELTA" required ${p ? 'readonly' : ''}>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="proj-name">Project Name</label>
+            <input type="text" id="proj-name" class="form-control" value="${p ? ui.escapeHtml(p.name) : ''}" placeholder="e.g. Telemedicine App" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="proj-desc">Description</label>
+            <textarea id="proj-desc" class="form-control" rows="2">${p ? ui.escapeHtml(p.description || '') : ''}</textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="proj-start">Start Date</label>
+              <input type="date" id="proj-start" class="form-control" value="${p ? p.startDate : ''}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="proj-end">End Date</label>
+              <input type="date" id="proj-end" class="form-control" value="${p ? p.endDate : ''}" required>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="proj-budget">Total Budget (INR ₹)</label>
+              <input type="number" id="proj-budget" class="form-control" value="${p ? p.totalBudget : 500000}" min="0" step="1000" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="proj-status">Status</label>
+              <select id="proj-status" class="form-control">
+                <option value="ACTIVE" ${p && p.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+                <option value="PLANNED" ${p && p.status === 'PLANNED' ? 'selected' : ''}>PLANNED</option>
+                <option value="COMPLETED" ${p && p.status === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+              </select>
+            </div>
+          </div>
+        `,
+        confirmText: p ? 'Save Changes' : 'Create Project',
+        onConfirm: async (modal) => {
+          const code = modal.querySelector('#proj-code').value.trim();
+          const name = modal.querySelector('#proj-name').value.trim();
+          const description = modal.querySelector('#proj-desc').value.trim();
+          const startDate = modal.querySelector('#proj-start').value;
+          const endDate = modal.querySelector('#proj-end').value;
+          const totalBudget = parseFloat(modal.querySelector('#proj-budget').value);
+          const status = modal.querySelector('#proj-status').value;
+
+          if (!code || !name || !startDate || !endDate || isNaN(totalBudget)) {
+            ui.showToast('Please fill all mandatory fields.', 'error');
+            return false;
+          }
+
+          try {
+            if (p) {
+              await api.put(`/projects/${p.id}`, { name, description, startDate, endDate, totalBudget, status });
+              ui.showToast('Project updated successfully.', 'success');
+            } else {
+              await api.post('/projects', { code, name, description, startDate, endDate, totalBudget });
+              ui.showToast('Project created successfully.', 'success');
+            }
+            loadProjects();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-create-project').onclick = () => openProjectModal();
+    document.getElementById('filter-search').oninput = renderFilteredProjects;
+    document.getElementById('filter-status').onchange = renderFilteredProjects;
+    document.getElementById('btn-refresh').onclick = loadProjects;
+
+    loadProjects();
+  </script>
+</body>
+</html>

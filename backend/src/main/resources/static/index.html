@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; height:100vh;">
+  <div style="text-align:center;">
+    <div style="display:inline-block; width:36px; height:36px; border:3px solid var(--border-color); border-top-color:var(--primary); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:1rem;"></div>
+    <h2 style="font-size:1.1rem; color:var(--text-muted);">Initializing Resource Allocation System...</h2>
+  </div>
+  <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+  <script type="module">
+    import { api } from '/js/api.js';
+    try {
+      const user = await api.get('/auth/me');
+      if (user && user.role === 'DEVELOPER') {
+        window.location.replace('/dev-dashboard.html');
+      } else if (user) {
+        window.location.replace('/pm-dashboard.html');
+      } else {
+        window.location.replace('/login.html');
+      }
+    } catch (_) {
+      window.location.replace('/login.html');
+    }
+  </script>
+</body>
+</html>

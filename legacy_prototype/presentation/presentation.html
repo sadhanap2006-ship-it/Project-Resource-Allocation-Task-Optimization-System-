@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Resource Allocation System — SIST CSE AI Presentation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Main Presentation Slide Deck Container (16:9 Aspect Ratio) -->
+    <div class="presentation-container">
+
+        <!-- ====================================================================
+             SLIDE 1: Title & Team Credentials
+             ==================================================================== -->
+        <section class="slide active title-slide" id="slide-1">
+            <div class="title-inst-pill">Sathyabama Institute of Science and Technology</div>
+            <h1 class="title-main">Project Resource Allocation System</h1>
+            <div class="title-sub">Intelligent Full-Stack Workload Balancing and Predictive Budget Forecasting</div>
+            <div class="title-divider"></div>
+
+            <div class="team-grid">
+                <div class="team-card-styled">
+                    <h4>Sadhana Prakash (Project Lead)</h4>
+                    <p>Full-Stack Architecture & Engine Implementation</p>
+                    <p>Register No: <strong>44731071</strong> • Section A3</p>
+                    <p>B.E. CSE (Artificial Intelligence) — 3rd Year</p>
+                </div>
+                <div class="team-card-styled">
+                    <h4>V S Sujithraa (Project Partner)</h4>
+                    <p>Database Design & System Verification</p>
+                    <p>Register No: <strong>44731091</strong> • Section A3</p>
+                    <p>B.E. CSE (Artificial Intelligence) — 3rd Year</p>
+                </div>
+            </div>
+
+            <div class="title-footer">
+                Department of Computer Science & Engineering (Artificial Intelligence) • Batch 2024–2028 (Section A3)
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 2: Introduction & Industry Domain Background
+             ==================================================================== -->
+        <section class="slide" id="slide-2">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>02. Introduction & Industry Domain</h2>
+                    <p>Enterprise IT Resource Management & Staffing Governance</p>
+                </div>
+                <span class="slide-category">Context</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div class="card-panel">
+                        <div class="card-title">Enterprise IT Landscape & Dynamics</div>
+                        <p class="card-body">
+                            Modern software organizations manage concurrent microservices and client projects with strict deadlines.
+                        </p>
+                        <ul class="point-list">
+                            <li>Human resources represent <strong>70%+ of overall software engineering expenditures</strong>.</li>
+                            <li>Engineers and tech leads are shared across projects, requiring precise capacity coordination to prevent burnout.</li>
+                            <li>Uncoordinated scheduling directly drives milestone slippage, team attrition, and severe budget overruns.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Core Mission of the System</div>
+                        <p class="card-body">
+                            Our system delivers a centralized, automated platform that gives engineering management complete operational visibility.
+                        </p>
+                        <ul class="point-list emerald">
+                            <li><strong>Zero Over-Allocation:</strong> Enforces strict 100% capacity ceilings across all concurrent milestone schedules.</li>
+                            <li><strong>Proactive Warning System:</strong> Automatically identifies leave overlaps and missing developer skill sets.</li>
+                            <li><strong>Predictive Intelligence:</strong> Forecasts project budget exhaustion dates via linear burn-down analysis.</li>
+                            <li><strong>Self-Service Visibility:</strong> Provides direct personal portals for engineers to inspect active deliverables.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 3: Problem Statement & Real-World Inefficiencies
+             ==================================================================== -->
+        <section class="slide" id="slide-3">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>03. Problem Statement & Inefficiencies</h2>
+                    <p>Core Operational Bottlenecks in Manual Resource Allocation</p>
+                </div>
+                <span class="slide-category">Problem</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3">
+                    <div class="card-panel accent-crimson bg-crimson">
+                        <div class="card-title">Invisible Over-Allocation</div>
+                        <p class="card-body">
+                            Managers book developers independently without cross-project calendar awareness.
+                        </p>
+                        <ul class="point-list crimson">
+                            <li>Individual peak workloads silently reach 120% to 150%.</li>
+                            <li>Workload spikes remain undetected until deliverable deadlines are missed.</li>
+                            <li>Causes severe engineering fatigue, quality regression, and team attrition.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-amber bg-amber">
+                        <div class="card-title">Disconnected Leaves</div>
+                        <p class="card-body">
+                            Approved employee vacation records stay locked in isolated HR administrative portals.
+                        </p>
+                        <ul class="point-list amber">
+                            <li>Milestones are scheduled during developer absences without system warning.</li>
+                            <li>Sprint workflows freeze unexpectedly mid-deliverable.</li>
+                            <li>Scrambling for emergency substitute coverage.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-crimson bg-crimson">
+                        <div class="card-title">Sudden Budget Depletion</div>
+                        <p class="card-body">
+                            Project financial spend is reviewed retrospectively at the end of billing cycles.
+                        </p>
+                        <ul class="point-list crimson">
+                            <li>Senior developer hourly rates burn capital faster than static estimates projected.</li>
+                            <li>Zero automated linear exhaustion date warning.</li>
+                            <li>Management faces sudden budget shortfalls.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 4: Existing System & Inherent Bottlenecks
+             ==================================================================== -->
+        <section class="slide" id="slide-4">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>04. Existing System & Inherent Bottlenecks</h2>
+                    <p>Why Disconnected Spreadsheets & Manual Tools Fail</p>
+                </div>
+                <span class="slide-category">Analysis</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div class="card-panel accent-amber">
+                        <div class="card-title">Limitations of Spreadsheet Management</div>
+                        <ul class="point-list amber">
+                            <li><strong>Manual Data Maintenance:</strong> Records are maintained manually and prone to human typographic errors.</li>
+                            <li><strong>Zero Real-Time Validation:</strong> A spreadsheet cell accepts 200% workload without throwing any validation error.</li>
+                            <li><strong>Version Desynchronization:</strong> Multiple disconnected workbooks circulate over email with conflicting data.</li>
+                            <li><strong>No Algorithmic Intelligence:</strong> Static sheets cannot perform in-memory what-if simulations or automated sweeps.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-crimson">
+                        <div class="card-title">Measurable Real-World Consequences</div>
+                        <ul class="point-list crimson">
+                            <li><strong>35% Project Delivery Slippage:</strong> Directly attributed to unforeseen developer bandwidth bottlenecks.</li>
+                            <li><strong>20% Cost Escalation:</strong> Caused by unchecked burn rates and unmonitored hourly billing accumulations.</li>
+                            <li><strong>Zero Developer Visibility:</strong> Engineers must manually ask managers what tasks they are assigned each week.</li>
+                            <li><strong>Substantial Administrative Overhead:</strong> Hours wasted weekly reconciling conflicting spreadsheets.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 5: Proposed System (Our Centralized 3-Tier Solution)
+             ==================================================================== -->
+        <section class="slide" id="slide-5">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>05. Proposed Centralized Solution</h2>
+                    <p>An Intelligent, Real-Time 3-Tier Web System</p>
+                </div>
+                <span class="slide-category">Solution</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3">
+                    <div class="card-panel">
+                        <div class="card-title">Automated Sweep-Line Algorithm</div>
+                        <ul class="point-list">
+                            <li>Evaluates daily boundary points to detect exact peak workload over-allocations (>100%).</li>
+                            <li>Instantly surfaces overlapping milestone clashes and leave conflicts.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">In-Memory What-If Simulator</div>
+                        <ul class="point-list emerald">
+                            <li>Enables project managers to test candidate developer swaps without altering production database.</li>
+                            <li>Calculates cost impact, schedule shift, and skill suitability in real time.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel">
+                        <div class="card-title">Dual-Portal Workspaces</div>
+                        <ul class="point-list">
+                            <li>Dedicated Executive Manager view for cross-project governance and budget tracking.</li>
+                            <li>Streamlined Employee portal accessed via unique Employee ID for instant task clarity.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-panel accent-emerald bg-emerald" style="margin-top: 1.25rem;">
+                    <div class="card-title" style="color: #065f46;">Strategic Architectural Shift</div>
+                    <p class="card-body" style="color: #065f46; margin-bottom: 0;">
+                        Transitions engineering management from reactive firefighting (finding out a milestone failed after the deadline) to proactive automated capacity optimization before work starts.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 6: Project Objectives (SMART Goals)
+             ==================================================================== -->
+        <section class="slide" id="slide-6">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>06. Project Objectives (SMART Goals)</h2>
+                    <p>Specific, Measurable, Achievable, Relevant & Time-Bound Targets</p>
+                </div>
+                <span class="slide-category">Objectives</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-4" style="margin-bottom: 1.25rem;">
+                    <div class="metric-box accent-emerald">
+                        <div class="metric-val">100%</div>
+                        <div class="metric-label">Conflict Elimination</div>
+                        <div class="metric-sub">Zero undetected double bookings</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-val">&lt; 50ms</div>
+                        <div class="metric-label">REST API Latency</div>
+                        <div class="metric-sub">Sub-second real-time responsiveness</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-val">13</div>
+                        <div class="metric-label">3NF Relational Tables</div>
+                        <div class="metric-sub">Normalized ACID persistence</div>
+                    </div>
+                    <div class="metric-box accent-emerald">
+                        <div class="metric-val">1-Click</div>
+                        <div class="metric-label">Windows Execution</div>
+                        <div class="metric-sub">Zero-configuration run.bat script</div>
+                    </div>
+                </div>
+                <div class="card-panel">
+                    <div class="card-title">Detailed Academic Objectives</div>
+                    <ul class="point-list">
+                        <li><strong>Specific:</strong> Centralize developer allocations, milestones, leave schedules, and project budgets into one system.</li>
+                        <li><strong>Measurable:</strong> Predict exact budget exhaustion dates mathematically through linear burn-down regressions.</li>
+                        <li><strong>Achievable:</strong> Pure Java SE & JDBC backend eliminates framework bloat for transparent viva defense.</li>
+                        <li><strong>Relevant:</strong> Directly resolves prevalent staffing bottlenecks in modern software engineering teams.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 7: Key Functional Features Implemented
+             ==================================================================== -->
+        <section class="slide" id="slide-7">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>07. Key Functional Features Implemented</h2>
+                    <p>Comprehensive Enterprise Capability Matrix</p>
+                </div>
+                <span class="slide-category">Features</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3">
+                    <div class="card-panel">
+                        <div class="card-title">Executive Overview Dashboard</div>
+                        <p class="card-body">Live KPI metrics, active projects summary, budget utilization progress, and exhaustion charts.</p>
+                    </div>
+                    <div class="card-panel accent-crimson">
+                        <div class="card-title">Automated Conflict Detection</div>
+                        <p class="card-body">Daily sweep-line algorithm detecting over-allocations (>100%), leave overlaps, and missing skills.</p>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">What-If Staffing Simulator</div>
+                        <p class="card-body">In-memory candidate evaluation comparing cost deltas, delivery timeline shifts, and skill match.</p>
+                    </div>
+                    <div class="card-panel accent-amber" style="margin-top: 1rem;">
+                        <div class="card-title">Team Workload Heatmap</div>
+                        <p class="card-body">Monthly developer capacity matrix color-coded for rapid identification of under/over-capacity.</p>
+                    </div>
+                    <div class="card-panel" style="margin-top: 1rem;">
+                        <div class="card-title">Interactive Schedule Timeline</div>
+                        <p class="card-body">Gantt-style milestone schedule with visual progress indicators and assigned engineer details.</p>
+                    </div>
+                    <div class="card-panel" style="margin-top: 1rem;">
+                        <div class="card-title">Employee Personal Portal</div>
+                        <p class="card-body">Dedicated task workspace accessed simply via Employee ID number, displaying active deliverables.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 8: Technology Stack
+             ==================================================================== -->
+        <section class="slide" id="slide-8">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>08. Technology Stack Specification</h2>
+                    <p>Clean, Transparent and Defensible Technologies</p>
+                </div>
+                <span class="slide-category">Tech Stack</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3">
+                    <div class="card-panel">
+                        <div class="card-title">Tier 1: Frontend Client</div>
+                        <ul class="point-list">
+                            <li><strong>HTML5:</strong> Semantic containers (&lt;header&gt;, &lt;nav&gt;, &lt;main&gt;, &lt;section&gt;).</li>
+                            <li><strong>Vanilla CSS3:</strong> Modern Grid & Flexbox, design tokens, responsive cards.</li>
+                            <li><strong>ES6+ JavaScript:</strong> Async Fetch API, DOM manipulation, clean controllers.</li>
+                            <li><strong>Chart.js:</strong> Strictly for project budget burn-down visualization.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel bg-indigo">
+                        <div class="card-title">Tier 2: Backend Engine</div>
+                        <ul class="point-list">
+                            <li><strong>Pure Java SE 17+:</strong> Robust, high-performance object-oriented backend.</li>
+                            <li><strong>HttpServer:</strong> Built-in com.sun.net.httpserver lightweight web server.</li>
+                            <li><strong>Zero Framework Bloat:</strong> Runs directly without Spring Boot or Maven overhead.</li>
+                            <li><strong>Algorithmic Services:</strong> Pure Java sweep-line and simulation logic.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel">
+                        <div class="card-title">Tier 3: Relational Database</div>
+                        <ul class="point-list">
+                            <li><strong>MySQL 8.0:</strong> Robust relational database running on standard port 3306.</li>
+                            <li><strong>Type-4 JDBC Driver:</strong> Official mysql-connector-j-8.3.0.jar.</li>
+                            <li><strong>PreparedStatement:</strong> 100% parameterized queries for SQL security.</li>
+                            <li><strong>3NF Relational Schema:</strong> 13 normalized tables.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 9: 3-Tier System Architecture & Multi-Port Data Flow
+             ==================================================================== -->
+        <section class="slide" id="slide-9">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>09. 3-Tier System Architecture & Data Flow</h2>
+                    <p>Multi-Port Separation of Concerns & Clean Layering</p>
+                </div>
+                <span class="slide-category">Architecture</span>
+            </div>
+            <div class="slide-content">
+                <div class="arch-flow">
+                    <div class="arch-tier">
+                        <h4>Tier 1: Client Web Application</h4>
+                        <p>Port: 8080 (Served via embedded static router)</p>
+                        <p>Technology: HTML5, CSS3, ES6+ JavaScript</p>
+                        <p style="color: #4f46e5; margin-top: 4px;">User Interaction & Rendering</p>
+                    </div>
+                    <div class="arch-arrow">⟶</div>
+                    <div class="arch-tier active">
+                        <h4>Tier 2: Backend REST Engine</h4>
+                        <p>Port: 8080 (REST API /api/*)</p>
+                        <p>Technology: Pure Java SE HttpServer</p>
+                        <p style="color: #4f46e5; margin-top: 4px;">Business Logic & Sweep-Line</p>
+                    </div>
+                    <div class="arch-arrow">⟶</div>
+                    <div class="arch-tier">
+                        <h4>Tier 3: MySQL Database</h4>
+                        <p>Port: 3306 (TCP/IP JDBC connection)</p>
+                        <p>Technology: MySQL 8.0 Community Server</p>
+                        <p style="color: #4f46e5; margin-top: 4px;">13 Tables (3NF) & ACID</p>
+                    </div>
+                </div>
+                <div class="card-panel accent-emerald" style="margin-top: 1.25rem;">
+                    <div class="card-title">Architectural Design Highlights</div>
+                    <ul class="point-list emerald">
+                        <li><strong>Unified Origin on Port 8080:</strong> Eliminates cross-origin CORS pre-flight complexity.</li>
+                        <li><strong>Decoupled Presentation:</strong> Frontend communicates purely via asynchronous JSON REST payloads.</li>
+                        <li><strong>Robust Parameterization:</strong> PreparedStatement eliminates SQL injection vulnerabilities.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 10: Application Modules Breakdown
+             ==================================================================== -->
+        <section class="slide" id="slide-10">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>10. Application Modules Breakdown</h2>
+                    <p>Clean Single-Responsibility Subsystem Architecture</p>
+                </div>
+                <span class="slide-category">Modules</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div class="card-panel">
+                        <div class="card-title">Administrative & Data Modules</div>
+                        <ul class="point-list">
+                            <li><strong>Authentication & Session Module:</strong> Supports dual-portal access (Manager credentials vs Employee ID number).</li>
+                            <li><strong>Project Management Module:</strong> Manages project budgets, expenditures, milestones, and lifecycle status.</li>
+                            <li><strong>Milestone Tracking Module:</strong> Tracks deliverable deadlines, estimated effort hours, and required skills.</li>
+                            <li><strong>Resource Allocation Module:</strong> Records developer assignments, workload percentages, and hourly rates.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Intelligent Algorithmic Modules</div>
+                        <ul class="point-list emerald">
+                            <li><strong>Conflict Detection Engine:</strong> Daily sweep-line algorithm flagging >100% capacity overruns and leave overlaps.</li>
+                            <li><strong>What-If Simulation Engine:</strong> In-memory candidate evaluator predicting cost and delivery schedule deltas.</li>
+                            <li><strong>Budget Forecaster Module:</strong> Computes daily burn rates from active allocations to linearly predict exhaustion dates.</li>
+                            <li><strong>Notification Engine:</strong> Dispatches live system alerts with dynamic counter in the navigation bar.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 11: Database Design (Tables in 3NF)
+             ==================================================================== -->
+        <section class="slide" id="slide-11">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>11. Database Design (3NF Normalization)</h2>
+                    <p>13 Relational Tables with Referential Integrity & Constraints</p>
+                </div>
+                <span class="slide-category">Database</span>
+            </div>
+            <div class="slide-content">
+                <div class="pres-table-wrapper">
+                    <table class="pres-table">
+                        <thead>
+                            <tr>
+                                <th>Table Name</th>
+                                <th>Primary Key</th>
+                                <th>Foreign Keys</th>
+                                <th>Purpose & Constraints</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>users</code></td>
+                                <td><code>id (INT PK)</code></td>
+                                <td><code>role_id -> roles</code></td>
+                                <td>User authentication, hashed password, role mappings.</td>
+                            </tr>
+                            <tr>
+                                <td><code>developers</code></td>
+                                <td><code>id (INT PK)</code></td>
+                                <td><code>user_id -> users</code></td>
+                                <td>Developer profiles, hourly billing rate, active status.</td>
+                            </tr>
+                            <tr>
+                                <td><code>projects</code></td>
+                                <td><code>id (INT PK)</code></td>
+                                <td><code>created_by -> users</code></td>
+                                <td>Project metadata, total budget, current spend, timelines.</td>
+                            </tr>
+                            <tr>
+                                <td><code>milestones</code></td>
+                                <td><code>id (INT PK)</code></td>
+                                <td><code>project_id -> projects</code></td>
+                                <td>Deliverable phases, estimated effort hours, completion status.</td>
+                            </tr>
+                            <tr>
+                                <td><code>allocations</code></td>
+                                <td><code>id (INT PK)</code></td>
+                                <td><code>developer_id, milestone_id</code></td>
+                                <td>Assignment records with allocation % (1 to 100).</td>
+                            </tr>
+                            <tr>
+                                <td><code>developer_skills</code></td>
+                                <td><code>(dev_id, skill_id) PK</code></td>
+                                <td><code>dev_id, skill_id</code></td>
+                                <td>Composite PK mapping competencies to developers.</td>
+                            </tr>
+                            <tr>
+                                <td><code>availability</code></td>
+                                <td><code>id (INT PK)</code></td>
+                                <td><code>developer_id -> developers</code></td>
+                                <td>Approved employee leaves and unavailable date intervals.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 12: Data Flow Diagrams (DFD Level 0 & Level 1)
+             ==================================================================== -->
+        <section class="slide" id="slide-12">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>12. Data Flow Diagrams (DFD Level 0 & 1)</h2>
+                    <p>Contextual & Process-Level Functional Data Transformations</p>
+                </div>
+                <span class="slide-category">Data Flow</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div class="card-panel">
+                        <div class="card-title">DFD Level 0: Context Diagram</div>
+                        <p class="card-body">External Entities: Project Manager & Employee / Developer.</p>
+                        <ul class="point-list">
+                            <li><strong>Manager Inputs:</strong> Project budgets, milestone schedules, developer allocation percentages.</li>
+                            <li><strong>System Outputs:</strong> Real-time conflict alerts, budget burn-down forecast charts, utilization heatmaps.</li>
+                            <li><strong>Employee Inputs:</strong> Employee ID login, leave scheduling requests.</li>
+                            <li><strong>System Outputs:</strong> Assigned deliverables, workload breakdown, remaining bandwidth.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">DFD Level 1: Process Decomposition</div>
+                        <ul class="point-list emerald">
+                            <li><strong>Process 1.0 (Authentication):</strong> Verifies credentials -> establishes active session state.</li>
+                            <li><strong>Process 2.0 (Allocation Validation):</strong> Enforces capacity limits -> writes to allocations table.</li>
+                            <li><strong>Process 3.0 (Conflict Sweep):</strong> Analyzes date intervals -> generates conflict warnings.</li>
+                            <li><strong>Process 4.0 (Budget Forecasting):</strong> Evaluates burn rates -> projects exhaustion date.</li>
+                            <li><strong>Process 5.0 (Simulation Engine):</strong> Tests what-if reassignments in memory -> returns impact metrics.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 13: End-to-End User Journey / Workflow
+             ==================================================================== -->
+        <section class="slide" id="slide-13">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>13. End-to-End User Journey & Workflow</h2>
+                    <p>Step-by-Step Practical Application Lifecycle</p>
+                </div>
+                <span class="slide-category">Workflow</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-4" style="margin-bottom: 1.25rem;">
+                    <div class="card-panel">
+                        <div class="card-title">Step 1: Definition</div>
+                        <p class="card-body">Manager configures project budget, duration, and creates milestones with required skill requirements.</p>
+                    </div>
+                    <div class="card-panel">
+                        <div class="card-title">Step 2: Assignment</div>
+                        <p class="card-body">Manager selects a developer and sets allocation percentage; live capacity preview verifies impact.</p>
+                    </div>
+                    <div class="card-panel accent-crimson">
+                        <div class="card-title">Step 3: Alerting</div>
+                        <p class="card-body">System automatically flags capacity overruns (>100%), leave overlaps, or missing skill competencies.</p>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Step 4: Resolution</div>
+                        <p class="card-body">Manager runs What-If Simulator to find an optimal candidate substitute and applies the change cleanly.</p>
+                    </div>
+                </div>
+                <div class="card-panel bg-indigo">
+                    <div class="card-title">Developer Self-Service Experience</div>
+                    <p class="card-body" style="margin-bottom: 0;">
+                        Developers enter their Employee ID (1 through 5) to directly access their assigned deliverables, deadlines, and personal workload bandwidth without needing administrative access.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 14: Frontend Interface & Responsive Views
+             ==================================================================== -->
+        <section class="slide" id="slide-14">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>14. Frontend Interface & Responsive Views</h2>
+                    <p>Modern Vanilla HTML5 & CSS3 Design System</p>
+                </div>
+                <span class="slide-category">Frontend</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3" style="margin-bottom: 1.25rem;">
+                    <div class="card-panel">
+                        <div class="card-title">Segmented Capsule Navigation</div>
+                        <p class="card-body">8 simplified navigation tabs (Overview, Projects, Team, Schedule, Workload, Leaves, Alerts, Planner) with clear active highlights.</p>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Visual Metric Cards</div>
+                        <p class="card-body">High-contrast metric cards with semantic top accents for critical overwork alerts, absence warnings, and balanced utilization.</p>
+                    </div>
+                    <div class="card-panel">
+                        <div class="card-title">Fully Responsive Layout</div>
+                        <p class="card-body">CSS Grid reflows automatically from 4 columns on desktop displays to 1 column on mobile and tablet viewports.</p>
+                    </div>
+                </div>
+                <div class="card-panel accent-emerald bg-emerald">
+                    <div class="card-title" style="color: #065f46;">Pure Vanilla Performance</div>
+                    <p class="card-body" style="color: #065f46; margin-bottom: 0;">
+                        Built entirely with custom CSS3 without external frameworks like Tailwind or Bootstrap. Ensures lightweight payload, sub-100ms load times, and complete code ownership.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 15: Java Backend Engine & Controller / Service / DAO
+             ==================================================================== -->
+        <section class="slide" id="slide-15">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>15. Java Backend Engine Architecture</h2>
+                    <p>Layered Controller ➔ Service ➔ DAO Implementation</p>
+                </div>
+                <span class="slide-category">Backend</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3" style="margin-bottom: 1.25rem;">
+                    <div class="card-panel">
+                        <div class="card-title">1. Controller Layer</div>
+                        <p class="card-body">DashboardController, AllocationController, SimulationController parse HTTP requests and format standardized JSON envelopes.</p>
+                    </div>
+                    <div class="card-panel bg-indigo">
+                        <div class="card-title">2. Service Layer</div>
+                        <p class="card-body">ConflictDetectionService, BudgetService, SimulationService execute core business algorithms and data validation rules.</p>
+                    </div>
+                    <div class="card-panel">
+                        <div class="card-title">3. DAO Layer</div>
+                        <p class="card-body">DeveloperDAO, ProjectDAO, AllocationDAO manage pure JDBC transactions using secure prepared statements.</p>
+                    </div>
+                </div>
+                <div class="card-panel accent-emerald">
+                    <div class="card-title">Algorithmic Innovation: Daily Sweep-Line Algorithm</div>
+                    <ul class="point-list emerald">
+                        <li>Creates discrete boundary events for milestone start dates (+allocation) and end dates (-allocation) in a sorted TreeMap.</li>
+                        <li>Sweeps across timeline to compute exact peak daily load percentages, eliminating false-positive over-allocation alerts.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 16: Database CRUD Operations (Parameterized SQL)
+             ==================================================================== -->
+        <section class="slide" id="slide-16">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>16. Database CRUD & Parameterized SQL</h2>
+                    <p>PreparedStatement Security & ACID Transactional Safety</p>
+                </div>
+                <span class="slide-category">Security</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-2">
+                    <div class="card-panel">
+                        <div class="card-title">Parameterized SQL for Injection Defense</div>
+                        <ul class="point-list">
+                            <li>All database interactions strictly utilize PreparedStatement with positional parameter placeholders (?).</li>
+                            <li>User input is handled strictly as data literals, never as executable SQL commands.</li>
+                        </ul>
+                        <pre style="background: #f8fafc; border-left: 3px solid #4f46e5; padding: 0.65rem 0.85rem; font-size: 0.78rem; margin-top: 0.75rem; color: #1e293b; overflow-x: auto; border-radius: 4px;">
+String sql = "INSERT INTO allocations (developer_id, milestone_id, "
+           + "allocation_percentage) VALUES (?, ?, ?)";
+PreparedStatement ps = conn.prepareStatement(sql);
+ps.setInt(1, devId);
+ps.setInt(2, milestoneId);
+ps.setInt(3, percentage);
+ps.executeUpdate();</pre>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Transactional Integrity (ACID Compliance)</div>
+                        <ul class="point-list emerald">
+                            <li><strong>Atomicity:</strong> Multi-table operations commit fully or roll back completely on failure.</li>
+                            <li><strong>Consistency:</strong> Foreign key cascades (ON DELETE CASCADE) preserve complete referential integrity.</li>
+                            <li><strong>Isolation:</strong> Standard READ COMMITTED transaction level prevents dirty reads.</li>
+                            <li><strong>Durability:</strong> Committed records are written immediately to persistent MySQL tables on disk.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 17: Acceptance Criteria Verification & Test Results
+             ==================================================================== -->
+        <section class="slide" id="slide-17">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>17. Acceptance Criteria Verification</h2>
+                    <p>Complete Test Execution Results Matrix</p>
+                </div>
+                <span class="slide-category">Quality</span>
+            </div>
+            <div class="slide-content">
+                <div class="pres-table-wrapper">
+                    <table class="pres-table">
+                        <thead>
+                            <tr>
+                                <th>Test ID</th>
+                                <th>Feature Tested</th>
+                                <th>Input Condition</th>
+                                <th>Expected Behavior</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>TC-01</strong></td>
+                                <td>Over-Allocation Alert</td>
+                                <td>Assign dev to 60% + 50% concurrent load</td>
+                                <td>Flags CRITICAL alert (110% peak workload)</td>
+                                <td><span class="status-passed">PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TC-02</strong></td>
+                                <td>Leave Conflict Alert</td>
+                                <td>Assign dev during approved leave dates</td>
+                                <td>Flags WARNING alert with substitute recommendation</td>
+                                <td><span class="status-passed">PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TC-03</strong></td>
+                                <td>Skill Gap Detection</td>
+                                <td>Assign dev without Python to AI task</td>
+                                <td>Flags WARNING with missing skill badges</td>
+                                <td><span class="status-passed">PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TC-04</strong></td>
+                                <td>What-If Simulation</td>
+                                <td>Simulate candidate swap on active milestone</td>
+                                <td>Returns cost delta & delivery impact in memory</td>
+                                <td><span class="status-passed">PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>TC-05</strong></td>
+                                <td>Employee ID Login</td>
+                                <td>Enter Employee ID: 1 (Arun Kumar)</td>
+                                <td>Opens personal portal showing assigned tasks</td>
+                                <td><span class="status-passed">PASSED</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 18: Live Working Results & Dashboard UI Representation
+             ==================================================================== -->
+        <section class="slide" id="slide-18">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>18. Live Working Results & Demonstration</h2>
+                    <p>Operational Metrics on http://localhost:8080</p>
+                </div>
+                <span class="slide-category">Results</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3">
+                    <div class="card-panel">
+                        <div class="card-title">Managed Projects Overview</div>
+                        <ul class="point-list">
+                            <li><strong>4 Live Projects Managed:</strong></li>
+                            <li>Cloud Microservices Platform (Active, 70% budget utilized)</li>
+                            <li>Enterprise AI Analytics Portal (Active, 35% budget utilized)</li>
+                            <li>Healthcare Patient Portal API (Planned)</li>
+                            <li>IoT Edge Telemetry Pipeline (Planned)</li>
+                            <li>Total Capital Monitored: ₹23,50,000</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-crimson bg-crimson">
+                        <div class="card-title" style="color: #991b1b;">Detected Live Conflicts</div>
+                        <ul class="point-list crimson">
+                            <li><strong>1 Critical Over-Allocation:</strong></li>
+                            <li>Priya Sharma at 110% peak workload across Core Auth & Cloud Infrastructure.</li>
+                            <li><strong>5 Warning Alerts:</strong></li>
+                            <li>Rahul Verma approved leave clash during Order Processing Pipeline.</li>
+                            <li>Identified skill gaps for Python, AWS, Docker, and Security.</li>
+                        </ul>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Simulation Engine Output</div>
+                        <ul class="point-list emerald">
+                            <li><strong>Candidate Evaluated:</strong> Priya Sharma.</li>
+                            <li><strong>Verdict:</strong> REJECTED (Causes 110% over-allocation).</li>
+                            <li><strong>Alternative Candidate:</strong> Arun Kumar.</li>
+                            <li><strong>Verdict:</strong> ACCEPTED (Cost delta ₹0, delivery shift 0 days).</li>
+                            <li>Fast 1-click update applied cleanly.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 19: Future Enhancements & Scalability Roadmap
+             ==================================================================== -->
+        <section class="slide" id="slide-19">
+            <div class="slide-header">
+                <div class="slide-title-group">
+                    <h2>19. Future Enhancements & Scalability Roadmap</h2>
+                    <p>Path Toward Enterprise AI & Production Cloud Deployment</p>
+                </div>
+                <span class="slide-category">Roadmap</span>
+            </div>
+            <div class="slide-content">
+                <div class="grid-3" style="margin-bottom: 1.25rem;">
+                    <div class="card-panel">
+                        <div class="card-title">AI Automated Staffing</div>
+                        <p class="card-body">Implement Genetic Algorithms or Machine Learning models to automatically suggest optimal developer assignments based on historical velocity and skill depth.</p>
+                    </div>
+                    <div class="card-panel accent-emerald">
+                        <div class="card-title">Native Mobile Companion Apps</div>
+                        <p class="card-body">Develop Flutter or React Native mobile applications with push notifications for instant assignment alerts and one-tap leave approvals.</p>
+                    </div>
+                    <div class="card-panel">
+                        <div class="card-title">Jira & GitHub Integration</div>
+                        <p class="card-body">Bi-directional webhook synchronization to track actual developer hours logged against estimated effort automatically.</p>
+                    </div>
+                </div>
+                <div class="card-panel bg-indigo">
+                    <div class="card-title">Cloud Containerization</div>
+                    <p class="card-body" style="margin-bottom: 0;">
+                        Package the application into lightweight Docker containers for automated continuous integration and scalable deployment on AWS ECS or Kubernetes clusters.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================================================================
+             SLIDE 20: Conclusion & Viva Defense Q&A
+             ==================================================================== -->
+        <section class="slide title-slide" id="slide-20">
+            <div class="title-inst-pill">SATHYABAMA INSTITUTE OF SCIENCE AND TECHNOLOGY — CAPSTONE VIVA</div>
+            <h1 class="title-main" style="font-size: 2.3rem;">Conclusion & Summary of Learnings</h1>
+            <div class="title-sub" style="font-size: 1.05rem; margin-bottom: 1.5rem;">
+                Successful Delivery of an Intelligent 3-Tier Resource Allocation System
+            </div>
+            <div class="title-divider" style="margin-bottom: 1.5rem;"></div>
+
+            <div class="grid-3" style="margin-bottom: 1.5rem;">
+                <div class="card-panel accent-emerald">
+                    <div class="card-title">Complete Objectives Met</div>
+                    <p class="card-body">Built a fully operational full-stack web application with zero framework bloat, demonstrable locally on Windows.</p>
+                </div>
+                <div class="card-panel">
+                    <div class="card-title">Algorithmic Rigor</div>
+                    <p class="card-body">Implemented daily sweep-line interval detection, in-memory what-if simulations, and linear budget forecasting.</p>
+                </div>
+                <div class="card-panel">
+                    <div class="card-title">Academic Defense Ready</div>
+                    <p class="card-body">Delivered 3NF normalized schema, comprehensive test execution matrices, and 1-click execution script.</p>
+                </div>
+            </div>
+
+            <div class="card-title" style="color: #4f46e5; font-size: 1.1rem; margin-bottom: 0;">
+                Thank you! We are now open for your Questions & Viva Evaluation.
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Persistent Bottom Navigation Controls -->
+    <div class="nav-controls" style="width: 100%; max-width: 1150px; border-radius: 0 0 14px 14px; margin-top: -1px; z-index: 10;">
+        <button class="nav-btn" id="btnPrev" onclick="prevSlide()">← Prev</button>
+        <div>
+            <span class="slide-counter" id="slideCounter">Slide 1 / 20</span>
+            <span class="shortcut-hint">[← / → to navigate]</span>
+        </div>
+        <button class="nav-btn primary" id="btnNext" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <!-- Vanilla JavaScript for Slide Navigation -->
+    <script>
+        const TOTAL_SLIDES = 20;
+        let currentSlide = 1;
+
+        function showSlide(index) {
+            if (index < 1) index = 1;
+            if (index > TOTAL_SLIDES) index = TOTAL_SLIDES;
+
+            currentSlide = index;
+
+            document.querySelectorAll(".slide").forEach((slide, idx) => {
+                slide.classList.toggle("active", idx + 1 === currentSlide);
+            });
+
+            document.getElementById("slideCounter").textContent = `Slide ${currentSlide} / ${TOTAL_SLIDES}`;
+            document.getElementById("btnPrev").disabled = (currentSlide === 1);
+            document.getElementById("btnNext").disabled = (currentSlide === TOTAL_SLIDES);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        // Keyboard Controls
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === "Home") {
+                e.preventDefault();
+                showSlide(1);
+            } else if (e.key === "End") {
+                e.preventDefault();
+                showSlide(TOTAL_SLIDES);
+            }
+        });
+
+        // Initialize
+        showSlide(1);
+    </script>
+</body>
+</html>

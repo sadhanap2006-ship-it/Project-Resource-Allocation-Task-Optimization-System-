@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave Management - Resource Optimizer</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <div id="app-header-container"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div class="page-title-group">
+          <h1>Leave & Unavailability Management</h1>
+          <p>Review developer time-off requests, hardware maintenance windows, and capacity impacts</p>
+        </div>
+        <div class="page-actions">
+          <button id="btn-request-leave" class="btn btn-primary">+ Request Leave</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Resource Name</th>
+                <th>Type</th>
+                <th>Period</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="leave-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { api } from '/js/api.js';
+    import { requireAuth } from '/js/auth.js';
+    import { ui } from '/js/ui.js';
+
+    const user = await requireAuth();
+    const isPM = user.role === 'PM' || user.role === 'ADMIN';
+
+    async function loadLeave() {
+      const tbody = document.getElementById('leave-table-body');
+      ui.renderLoading(tbody, 'Loading unavailability schedules...');
+
+      try {
+        const leaveList = await api.get('/unavailability');
+        renderLeave(leaveList);
+      } catch (err) {
+        ui.renderError(tbody, err, loadLeave);
+      }
+    }
+
+    function renderLeave(list) {
+      const tbody = document.getElementById('leave-table-body');
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-subtle);">No leave or maintenance schedules recorded.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(l => {
+        const statusBadge = l.status === 'APPROVED'
+          ? '<span class="badge badge-green">APPROVED</span>'
+          : l.status === 'REJECTED'
+          ? '<span class="badge badge-red">REJECTED</span>'
+          : '<span class="badge badge-amber">REQUESTED</span>';
+
+        let actionHtml = '-';
+        if (l.status === 'REQUESTED' && isPM) {
+          actionHtml = `
+            <div style="display:flex; gap:0.4rem;">
+              <button class="btn btn-secondary btn-sm btn-approve" data-id="${l.id}" style="color:var(--success);">Approve</button>
+              <button class="btn btn-secondary btn-sm btn-reject" data-id="${l.id}" style="color:var(--danger);">Reject</button>
+            </div>
+          `;
+        }
+
+        return `
+          <tr>
+            <td><strong>${ui.escapeHtml(l.resourceName || 'Resource #' + l.resourceId)}</strong></td>
+            <td><span class="badge badge-neutral">${l.resourceType || 'DEVELOPER'}</span></td>
+            <td>${ui.formatDate(l.startDate)} → ${ui.formatDate(l.endDate)}</td>
+            <td>${ui.escapeHtml(l.reason || '-')}</td>
+            <td>${statusBadge}</td>
+            <td>${actionHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.btn-approve').forEach(btn => {
+        btn.onclick = async () => {
+          try {
+            await api.put(`/unavailability/${btn.dataset.id}/approve`);
+            ui.showToast('Leave request approved.', 'success');
+            loadLeave();
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+          }
+        };
+      });
+
+      document.querySelectorAll('.btn-reject').forEach(btn => {
+        btn.onclick = async () => {
+          try {
+            await api.put(`/unavailability/${btn.dataset.id}/reject`);
+            ui.showToast('Leave request rejected.', 'info');
+            loadLeave();
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+          }
+        };
+      });
+    }
+
+    document.getElementById('btn-request-leave').onclick = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const resources = await api.get('/resources');
+      const devResources = resources.filter(r => r.type === 'DEVELOPER');
+
+      const resSelectHtml = isPM ? `
+        <div class="form-group">
+          <label class="form-label" for="leave-res">Resource</label>
+          <select id="leave-res" class="form-control">
+            ${devResources.map(r => `<option value="${r.id}">${ui.escapeHtml(r.name)}</option>`).join('')}
+          </select>
+        </div>
+      ` : '';
+
+      ui.showModal({
+        title: 'Submit Leave Request',
+        bodyHtml: `
+          ${resSelectHtml}
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="leave-start">Start Date</label>
+              <input type="date" id="leave-start" class="form-control" value="${today}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="leave-end">End Date</label>
+              <input type="date" id="leave-end" class="form-control" value="${today}" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="leave-reason">Reason</label>
+            <input type="text" id="leave-reason" class="form-control" placeholder="Annual leave, conference, etc.">
+          </div>
+        `,
+        confirmText: 'Submit Request',
+        onConfirm: async (modal) => {
+          const startDate = modal.querySelector('#leave-start').value;
+          const endDate = modal.querySelector('#leave-end').value;
+          const reason = modal.querySelector('#leave-reason').value.trim();
+          const resourceId = isPM ? parseInt(modal.querySelector('#leave-res').value) : null;
+
+          if (!startDate || !endDate) {
+            ui.showToast('Please specify valid dates.', 'error');
+            return false;
+          }
+
+          try {
+            await api.post('/unavailability', {
+              resourceId,
+              startDate,
+              endDate,
+              reason
+            });
+            ui.showToast('Leave request submitted successfully.', 'success');
+            loadLeave();
+            return true;
+          } catch (err) {
+            ui.showToast(err.message, 'error');
+            return false;
+          }
+        }
+      });
+    };
+
+    loadLeave();
+  </script>
+</body>
+</html>
