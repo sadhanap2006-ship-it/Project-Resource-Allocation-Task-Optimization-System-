@@ -206,19 +206,84 @@ public class JsonUtil {
         }
         if (trimmed.isEmpty()) return list;
 
-        String[] tokens = trimmed.split(",");
-        for (String token : tokens) {
-            token = token.trim();
-            if (token.startsWith("\"") && token.endsWith("\"")) {
-                list.add(token.substring(1, token.length() - 1));
-            } else if (!token.isEmpty()) {
-                try {
-                    list.add(Integer.parseInt(token));
-                } catch (NumberFormatException e) {
+        int len = trimmed.length();
+        int i = 0;
+        while (i < len) {
+            while (i < len && (Character.isWhitespace(trimmed.charAt(i)) || trimmed.charAt(i) == ',')) i++;
+            if (i >= len) break;
+
+            char c = trimmed.charAt(i);
+            if (c == '"') {
+                i++;
+                StringBuilder sb = new StringBuilder();
+                while (i < len) {
+                    if (trimmed.charAt(i) == '\\' && i + 1 < len) {
+                        char next = trimmed.charAt(i + 1);
+                        if (next == '"') sb.append('"');
+                        else if (next == 'n') sb.append('\n');
+                        else if (next == 'r') sb.append('\r');
+                        else if (next == 't') sb.append('\t');
+                        else sb.append(next);
+                        i += 2;
+                    } else if (trimmed.charAt(i) == '"') {
+                        break;
+                    } else {
+                        sb.append(trimmed.charAt(i));
+                        i++;
+                    }
+                }
+                i++;
+                list.add(sb.toString());
+            } else if (c == '{') {
+                int depth = 1;
+                int start = i;
+                i++;
+                while (i < len && depth > 0) {
+                    if (trimmed.charAt(i) == '"') {
+                        i++;
+                        while (i < len && trimmed.charAt(i) != '"') {
+                            if (trimmed.charAt(i) == '\\' && i + 1 < len) i++;
+                            i++;
+                        }
+                    } else if (trimmed.charAt(i) == '{') depth++;
+                    else if (trimmed.charAt(i) == '}') depth--;
+                    i++;
+                }
+                String sub = trimmed.substring(start, i);
+                list.add(parseObject(sub));
+            } else if (c == '[') {
+                int depth = 1;
+                int start = i;
+                i++;
+                while (i < len && depth > 0) {
+                    if (trimmed.charAt(i) == '"') {
+                        i++;
+                        while (i < len && trimmed.charAt(i) != '"') {
+                            if (trimmed.charAt(i) == '\\' && i + 1 < len) i++;
+                            i++;
+                        }
+                    } else if (trimmed.charAt(i) == '[') depth++;
+                    else if (trimmed.charAt(i) == ']') depth--;
+                    i++;
+                }
+                String sub = trimmed.substring(start, i);
+                list.add(parseArray(sub));
+            } else {
+                int start = i;
+                while (i < len && trimmed.charAt(i) != ',' && trimmed.charAt(i) != ']' && trimmed.charAt(i) != '}') i++;
+                String raw = trimmed.substring(start, i).trim();
+                if ("true".equalsIgnoreCase(raw)) list.add(Boolean.TRUE);
+                else if ("false".equalsIgnoreCase(raw)) list.add(Boolean.FALSE);
+                else if ("null".equalsIgnoreCase(raw)) list.add(null);
+                else {
                     try {
-                        list.add(Double.parseDouble(token));
-                    } catch (NumberFormatException e2) {
-                        list.add(token);
+                        if (raw.contains(".")) {
+                            list.add(Double.parseDouble(raw));
+                        } else {
+                            list.add(Long.parseLong(raw));
+                        }
+                    } catch (NumberFormatException e) {
+                        list.add(raw);
                     }
                 }
             }

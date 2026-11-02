@@ -154,17 +154,19 @@
         content.style.display = 'block';
 
         // 1. KPI Cards
-        document.getElementById('kpi-spend').innerText = `${ui.formatCurrency(summary.actualSpend)}`;
-        document.getElementById('kpi-spend-sub').innerText = `Budget: ${ui.formatCurrency(summary.totalBudget)} (${summary.budgetUtilisationPct}%)`;
+        const utilPct = summary.budgetUtilisationPct !== undefined ? summary.budgetUtilisationPct : (summary.utilisationPct !== undefined ? summary.utilisationPct : (forecast.utilisationPct !== undefined ? forecast.utilisationPct : 0));
+        document.getElementById('kpi-spend').innerText = `${ui.formatCurrency(summary.actualSpend || forecast.actualSpend || 0)}`;
+        document.getElementById('kpi-spend-sub').innerText = `Budget: ${ui.formatCurrency(summary.totalBudget || forecast.totalBudget || 0)} (${utilPct}%)`;
 
-        document.getElementById('kpi-burn').innerText = forecast.burnRateDaily ? `${ui.formatCurrency(forecast.burnRateDaily)}/day` : '₹0.00/day';
+        const burnVal = forecast.burnRateDaily !== undefined ? forecast.burnRateDaily : (forecast.burnRate !== undefined ? forecast.burnRate : 0);
+        document.getElementById('kpi-burn').innerText = burnVal ? `${ui.formatCurrency(burnVal)}/day` : '₹0.00/day';
         document.getElementById('kpi-runout').innerText = forecast.runOutDate
           ? `Run-out: ${ui.formatDate(forecast.runOutDate)} (${forecast.daysLeft} days left)`
-          : (forecast.daysLeft !== null ? 'Within project window' : 'Insufficient spending data');
+          : (forecast.daysLeft !== null && forecast.daysLeft !== undefined ? 'Within project window' : 'Insufficient spending data');
 
-        const cpi = forecast.evm?.cpi || summary.cpi || null;
-        const spi = forecast.evm?.spi || summary.spi || null;
-        const eac = forecast.evm?.eac || summary.eac || null;
+        const cpi = forecast.cpi !== undefined ? forecast.cpi : (forecast.evm?.cpi || summary.cpi || null);
+        const spi = forecast.spi !== undefined ? forecast.spi : (forecast.evm?.spi || summary.spi || null);
+        const eac = forecast.eac !== undefined ? forecast.eac : (forecast.evm?.eac || summary.eac || null);
 
         document.getElementById('kpi-cpi').innerText = cpi !== null ? cpi : '-';
         document.getElementById('kpi-cpi').style.color = cpi !== null && cpi < 0.9 ? 'var(--danger)' : 'var(--success)';
@@ -198,12 +200,28 @@
     }
 
     function renderCharts(forecast) {
-      const dates = (forecast.dailyForecast || []).map(d => d.date);
-      const actualSpend = (forecast.dailyForecast || []).map(d => d.actualCumulative);
-      const plannedVal = (forecast.dailyForecast || []).map(d => d.plannedValueCumulative);
-      const remainingBudg = (forecast.dailyForecast || []).map(d => d.budgetRemaining);
+      const seriesData = forecast.series || forecast.dailyForecast || [];
+      const cumCanvas = document.getElementById('cumulativeChart');
+      const burnCanvas = document.getElementById('burndownChart');
 
-      const ctx1 = document.getElementById('cumulativeChart').getContext('2d');
+      if (!seriesData || seriesData.length === 0) {
+        if (cumChart) { cumChart.destroy(); cumChart = null; }
+        if (burnChart) { burnChart.destroy(); burnChart = null; }
+        if (cumCanvas && cumCanvas.parentElement) {
+          cumCanvas.parentElement.innerHTML = '<div class="chart-empty-state" style="display:flex; align-items:center; justify-content:center; height:240px; color:var(--text-subtle); font-size:0.9rem;">No data yet</div>';
+        }
+        if (burnCanvas && burnCanvas.parentElement) {
+          burnCanvas.parentElement.innerHTML = '<div class="chart-empty-state" style="display:flex; align-items:center; justify-content:center; height:240px; color:var(--text-subtle); font-size:0.9rem;">No data yet</div>';
+        }
+        return;
+      }
+
+      const dates = seriesData.map(d => d.date);
+      const actualSpend = seriesData.map(d => d.actualCumulative);
+      const plannedVal = seriesData.map(d => d.plannedValueCumulative);
+      const remainingBudg = seriesData.map(d => d.budgetRemaining !== undefined ? d.budgetRemaining : d.remainingBudget);
+
+      const ctx1 = cumCanvas.getContext('2d');
       if (cumChart) cumChart.destroy();
       cumChart = new Chart(ctx1, {
         type: 'line',
@@ -238,7 +256,7 @@
         }
       });
 
-      const ctx2 = document.getElementById('burndownChart').getContext('2d');
+      const ctx2 = burnCanvas.getContext('2d');
       if (burnChart) burnChart.destroy();
       burnChart = new Chart(ctx2, {
         type: 'line',
@@ -258,6 +276,7 @@
         },
         options: {
           responsive: true,
+
           maintainAspectRatio: false,
           scales: {
             y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af', callback: v => `₹${v/1000}k` } },

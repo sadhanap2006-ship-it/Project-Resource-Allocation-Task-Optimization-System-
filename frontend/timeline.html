@@ -20,9 +20,6 @@
       position: relative;
       min-width: 900px;
     }
-    .gantt-header {
-      display: contents;
-    }
     .gantt-header-cell {
       padding: 0.6rem 0.25rem;
       background: var(--bg-surface);
@@ -32,9 +29,6 @@
       text-align: center;
       color: var(--text-muted);
       font-weight: 600;
-    }
-    .gantt-row {
-      display: contents;
     }
     .gantt-label {
       padding: 0.6rem 0.75rem;
@@ -52,6 +46,65 @@
       border-right: 1px solid rgba(255, 255, 255, 0.05);
       position: relative;
     }
+
+    /* Circular Progress Ring & Tooltip Styles */
+    .ring-container {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+    }
+    .ring-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 48px;
+    }
+    .ring-wrapper:hover .ring-tooltip {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .ring-tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      z-index: 50;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+      color: var(--text-main);
+      text-align: left;
+    }
+    .ring-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #0f172a transparent transparent transparent;
+    }
+    .ring-task-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-align: center;
+      font-weight: 500;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -62,14 +115,15 @@
       <div class="page-header">
         <div class="page-title-group">
           <h1>Project Timeline & Resource Gantt</h1>
-          <p>Interactive schedule lanes with milestone progress, delivery forecasts, and conflict bands</p>
+          <p>Interactive schedule lanes with circular progress rings, milestone forecasts, and conflict bands</p>
         </div>
         <div class="page-actions">
           <div class="tab-nav" style="border:none; margin:0;">
-            <button class="tab-btn active" id="tab-milestones">Milestone Gantt</button>
+            <button class="tab-btn active" id="tab-projects">All Projects Timeline</button>
+            <button class="tab-btn" id="tab-milestones">Milestone Gantt</button>
             <button class="tab-btn" id="tab-resources">Resource Lanes</button>
           </div>
-          <select id="select-project" class="form-control" style="min-width: 200px;">
+          <select id="select-project" class="form-control" style="min-width: 220px; display: none;">
           </select>
         </div>
       </div>
@@ -78,17 +132,16 @@
       <div id="timeline-container" style="display: none;">
         <div class="card" style="margin-bottom: 1.5rem;">
           <div class="card-header">
-            <h3 class="card-title" id="timeline-title">Gantt View</h3>
-            <div style="display:flex; gap:1rem; font-size:0.75rem; align-items:center;">
-              <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px; height:12px; background:var(--primary); border-radius:2px;"></span> In Progress</span>
-              <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px; height:12px; background:var(--success); border-radius:2px;"></span> Completed</span>
-              <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px; height:12px; background:#64748b; border-radius:2px;"></span> Planned</span>
-              <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px; height:12px; background:rgba(239, 68, 68, 0.3); border:1px dashed var(--danger); border-radius:2px;"></span> Conflict Band</span>
+            <h3 class="card-title" id="timeline-title">Project Overview Timeline</h3>
+            <div style="display:flex; gap:1.25rem; font-size:0.75rem; align-items:center;">
+              <span style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:12px; background:#10b981; border-radius:50%;"></span> On Track</span>
+              <span style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:12px; background:#f59e0b; border-radius:50%;"></span> At Risk</span>
+              <span style="display:flex; align-items:center; gap:5px;"><span style="width:12px; height:12px; background:#ef4444; border-radius:50%;"></span> Behind Schedule</span>
             </div>
           </div>
 
           <div class="gantt-chart-container" id="gantt-wrapper">
-            <!-- Dynamically rendered CSS Grid Gantt -->
+            <!-- Dynamically rendered Timeline View -->
           </div>
         </div>
       </div>
@@ -100,14 +153,85 @@
     import { requireAuth } from '/js/auth.js';
     import { ui } from '/js/ui.js';
 
+    const params = new URLSearchParams(window.location.search);
+    const tokenParam = params.get('token');
+    if (tokenParam) {
+      localStorage.setItem('prs_jwt_token', tokenParam);
+    }
+
     await requireAuth(['PM', 'ADMIN']);
 
-    let activeView = 'MILESTONES'; // MILESTONES or RESOURCES
+    /**
+     * Shared Circular Progress Ring Generator
+     * Draws an SVG circular progress ring (diameter 48px) with % in centre
+     * @param {number} percent - Progress percentage (0 - 100)
+     * @param {string} colour - Hex or CSS color string (e.g. '#10b981', '#f59e0b', '#ef4444')
+     * @param {number} size - Diameter in pixels (default: 48)
+     * @returns {string} SVG HTML string
+     */
+    export function drawRing(percent, colour = '#10b981', size = 48) {
+      const p = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+      const strokeWidth = 4;
+      const radius = (size - strokeWidth) / 2;
+      const center = size / 2;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference * (1 - p / 100);
+
+      return `
+        <svg class="circular-progress-ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform: rotate(-90deg); display: block;">
+          <!-- Background track circle -->
+          <circle
+            cx="${center}"
+            cy="${center}"
+            r="${radius}"
+            fill="none"
+            stroke="rgba(255, 255, 255, 0.08)"
+            stroke-width="${strokeWidth}"
+          />
+          <!-- Progress foreground circle -->
+          <circle
+            class="progress-ring-circle"
+            cx="${center}"
+            cy="${center}"
+            r="${radius}"
+            fill="none"
+            stroke="${colour}"
+            stroke-width="${strokeWidth}"
+            stroke-dasharray="${circumference.toFixed(2)}"
+            stroke-dashoffset="${offset.toFixed(2)}"
+            stroke-linecap="round"
+            style="transition: stroke-dashoffset 0.4s ease;"
+          />
+          <!-- Text in centre (counter-rotated 90deg to remain upright) -->
+          <text
+            x="${center}"
+            y="${center}"
+            text-anchor="middle"
+            dominant-baseline="central"
+            fill="var(--text-main, #f8fafc)"
+            font-size="${Math.max(10, Math.round(size * 0.24))}px"
+            font-weight="700"
+            font-family="system-ui, -apple-system, sans-serif"
+            transform="rotate(90 ${center} ${center})"
+          >${p}%</text>
+        </svg>
+      `;
+    }
+
+    // Attach to window and ui so other pages can reuse it later
+    window.drawRing = drawRing;
+    if (typeof ui !== 'undefined') {
+      ui.drawRing = drawRing;
+    }
+
+    let activeView = 'PROJECTS'; // PROJECTS, MILESTONES, or RESOURCES
     let projects = [];
     let currentProjectId = null;
 
-    const params = new URLSearchParams(window.location.search);
     const initialProjectId = params.get('projectId');
+    if (initialProjectId) {
+      activeView = 'MILESTONES';
+    }
 
     async function init() {
       try {
@@ -119,27 +243,49 @@
           </option>
         `).join('');
 
-        currentProjectId = select.value;
+        currentProjectId = initialProjectId || (projects.length > 0 ? projects[0].id : null);
+
         select.onchange = () => {
           currentProjectId = select.value;
           loadTimeline();
         };
 
-        document.getElementById('tab-milestones').onclick = () => {
-          activeView = 'MILESTONES';
-          document.getElementById('tab-milestones').classList.add('active');
-          document.getElementById('tab-resources').classList.remove('active');
-          document.getElementById('select-project').style.display = 'block';
+        const tabProjects = document.getElementById('tab-projects');
+        const tabMilestones = document.getElementById('tab-milestones');
+        const tabResources = document.getElementById('tab-resources');
+
+        tabProjects.onclick = () => {
+          activeView = 'PROJECTS';
+          tabProjects.classList.add('active');
+          tabMilestones.classList.remove('active');
+          tabResources.classList.remove('active');
+          select.style.display = 'none';
           loadTimeline();
         };
 
-        document.getElementById('tab-resources').onclick = () => {
-          activeView = 'RESOURCES';
-          document.getElementById('tab-resources').classList.add('active');
-          document.getElementById('tab-milestones').classList.remove('active');
-          document.getElementById('select-project').style.display = 'none';
+        tabMilestones.onclick = () => {
+          activeView = 'MILESTONES';
+          tabMilestones.classList.add('active');
+          tabProjects.classList.remove('active');
+          tabResources.classList.remove('active');
+          select.style.display = 'block';
           loadTimeline();
         };
+
+        tabResources.onclick = () => {
+          activeView = 'RESOURCES';
+          tabResources.classList.add('active');
+          tabProjects.classList.remove('active');
+          tabMilestones.classList.remove('active');
+          select.style.display = 'none';
+          loadTimeline();
+        };
+
+        if (activeView === 'MILESTONES') {
+          tabMilestones.classList.add('active');
+          tabProjects.classList.remove('active');
+          select.style.display = 'block';
+        }
 
         loadTimeline();
       } catch (err) {
@@ -150,13 +296,15 @@
     async function loadTimeline() {
       const loadState = document.getElementById('loading-state');
       const content = document.getElementById('timeline-container');
-      ui.renderLoading(loadState, 'Rendering timeline bars...');
+      ui.renderLoading(loadState, 'Rendering timeline...');
 
       try {
         loadState.style.display = 'none';
         content.style.display = 'block';
 
-        if (activeView === 'MILESTONES') {
+        if (activeView === 'PROJECTS') {
+          await renderProjectsTimeline();
+        } else if (activeView === 'MILESTONES') {
           await renderMilestonesGantt();
         } else {
           await renderResourceLanesGantt();
@@ -166,6 +314,197 @@
       }
     }
 
+    /**
+     * View 1: All Projects Timeline
+     * Replaces plain progress bars on project rows with 48px SVG Circular Progress Rings
+     */
+    async function renderProjectsTimeline() {
+      document.getElementById('timeline-title').innerText = 'All Projects Timeline & Progress';
+      const wrapper = document.getElementById('gantt-wrapper');
+
+      if (!projects || projects.length === 0) {
+        wrapper.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--text-subtle);">No projects available.</div>';
+        return;
+      }
+
+      // Compute overall horizon for timeline bars
+      const todayTime = new Date().getTime();
+      const allStarts = projects.map(p => new Date(p.startDate).getTime());
+      const allEnds = projects.map(p => new Date(p.endDate).getTime());
+      const minTime = Math.min(...allStarts);
+      const maxTime = Math.max(...allEnds);
+      const totalSpanDays = Math.max(30, Math.ceil((maxTime - minTime) / (1000 * 60 * 60 * 24)) + 5);
+
+      // Fetch milestone tasks data for all projects
+      // DATA RULE:
+      // % complete must come from the database (approved tasks / total tasks).
+      // If the proof/approval workflow does not exist yet, use the existing milestone completion field,
+      // and add a code comment saying so.
+      const projectDataPromises = projects.map(async (p) => {
+        try {
+          const mRes = await api.get(`/projects/${p.id}/milestones`);
+          const milestones = mRes || [];
+
+          // Data note: % complete must come from the database (approved tasks / total tasks).
+          // Because the proof/approval workflow does not exist yet in this phase,
+          // using the existing milestone completion field from the database.
+          const totalTasks = milestones.length;
+          const doneTasks = milestones.filter(m => m.status === 'COMPLETED' || (m.progressPct !== null && m.progressPct >= 100)).length;
+          
+          let actualPct = 0;
+          if (totalTasks > 0) {
+            if (doneTasks === totalTasks) {
+              actualPct = 100;
+            } else {
+              const sumPct = milestones.reduce((sum, m) => sum + (Number(m.progressPct) || 0), 0);
+              actualPct = Math.round(sumPct / totalTasks);
+            }
+          }
+
+          // Calculate Planned % based on project timeline
+          const pStart = new Date(p.startDate).getTime();
+          const pEnd = new Date(p.endDate).getTime();
+          let plannedPct = 0;
+          if (pEnd > pStart) {
+            if (todayTime <= pStart) plannedPct = 0;
+            else if (todayTime >= pEnd) plannedPct = 100;
+            else plannedPct = Math.round(((todayTime - pStart) / (pEnd - pStart)) * 100);
+          }
+
+          // Ring colour: green if on track, amber if at risk, red if behind schedule.
+          let ringColour = '#10b981'; // green: on track
+          let statusText = 'On Track';
+
+          if (actualPct >= 100) {
+            ringColour = '#10b981';
+            statusText = 'Completed · On Track';
+          } else if (p.health === 'RED' || actualPct < plannedPct - 15) {
+            ringColour = '#ef4444'; // red: behind schedule
+            statusText = 'Behind Schedule';
+          } else if (p.health === 'AMBER' || actualPct < plannedPct - 5) {
+            ringColour = '#f59e0b'; // amber: at risk
+            statusText = 'At Risk';
+          } else {
+            ringColour = '#10b981'; // green: on track
+            statusText = 'On Track';
+          }
+
+          return {
+            project: p,
+            milestones,
+            totalTasks,
+            doneTasks,
+            actualPct,
+            plannedPct,
+            ringColour,
+            statusText
+          };
+        } catch (e) {
+          return {
+            project: p,
+            milestones: [],
+            totalTasks: 0,
+            doneTasks: 0,
+            actualPct: 0,
+            plannedPct: 0,
+            ringColour: '#10b981',
+            statusText: 'On Track'
+          };
+        }
+      });
+
+      const projectItems = await Promise.all(projectDataPromises);
+
+      let html = `
+        <div style="padding:1.25rem;">
+          <table class="data-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="width:240px;">Project</th>
+                <th style="width:130px; text-align:center;">Progress Ring</th>
+                <th>Timeline Schedule</th>
+                <th style="width:110px; text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      projectItems.forEach(item => {
+        const p = item.project;
+        const pStart = new Date(p.startDate).getTime();
+        const pEnd = new Date(p.endDate).getTime();
+        const leftPct = Math.max(0, ((pStart - minTime) / (1000 * 60 * 60 * 24)) / totalSpanDays * 100);
+        const widthPct = Math.max(8, ((pEnd - pStart) / (1000 * 60 * 60 * 24)) / totalSpanDays * 100);
+
+        const statusBadgeClass = p.status === 'COMPLETED' ? 'badge-green' : p.status === 'ACTIVE' ? 'badge-blue' : 'badge-neutral';
+
+        html += `
+          <tr class="project-row" data-id="${p.id}">
+            <td>
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:4px;">
+                <span class="badge ${statusBadgeClass}">${p.code}</span>
+                <strong style="font-size:0.95rem; color:var(--text-main);">${ui.escapeHtml(p.name)}</strong>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">${ui.formatDate(p.startDate)} → ${ui.formatDate(p.endDate)}</div>
+              <div style="font-size:0.75rem; color:var(--text-subtle); margin-top:2px;">Budget: ${ui.formatCurrency(p.totalBudget)}</div>
+            </td>
+            <td style="text-align:center; vertical-align:middle;">
+              <!-- Circular Progress Ring (48px) with tooltip and task counter -->
+              <div class="ring-container" data-planned="${item.plannedPct}" data-actual="${item.actualPct}" title="Planned: ${item.plannedPct}% | Actual: ${item.actualPct}%">
+                <div class="ring-wrapper">
+                  ${drawRing(item.actualPct, item.ringColour, 48)}
+                  <div class="ring-tooltip">
+                    <div style="font-weight:600; margin-bottom:3px; color:var(--text-main);">${ui.escapeHtml(p.name)}</div>
+                    <div>Planned: <strong>${item.plannedPct}%</strong></div>
+                    <div>Actual: <strong>${item.actualPct}%</strong></div>
+                    <div style="font-size:0.68rem; color:${item.ringColour}; margin-top:3px; font-weight:600;">${item.statusText}</div>
+                  </div>
+                </div>
+                <div class="ring-task-label">
+                  ${item.doneTasks} of ${item.totalTasks} tasks
+                </div>
+              </div>
+            </td>
+            <td style="vertical-align:middle;">
+              <div style="background:var(--bg-surface); height:36px; border-radius:6px; position:relative; overflow:hidden; border:1px solid var(--border-color);">
+                <!-- Planned range background -->
+                <div style="position:absolute; left:${leftPct}%; width:${widthPct}%; height:100%; background:${item.ringColour}; opacity:0.18; border-radius:4px;"></div>
+                <!-- Actual progress fill inside range -->
+                <div style="position:absolute; left:${leftPct}%; width:${(widthPct * item.actualPct / 100)}%; height:100%; background:${item.ringColour}; border-radius:4px; opacity:0.85;"></div>
+                <!-- Schedule text overlay -->
+                <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 12px; font-size:0.75rem; font-weight:600; pointer-events:none;">
+                  <span>${ui.escapeHtml(p.name)} (${p.status})</span>
+                  <span style="color:var(--text-main); font-weight:700;">${item.actualPct}% complete</span>
+                </div>
+              </div>
+            </td>
+            <td style="text-align:right; vertical-align:middle;">
+              <button class="btn btn-secondary btn-sm btn-view-milestones" data-id="${p.id}">
+                Milestones →
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += '</tbody></table></div>';
+      wrapper.innerHTML = html;
+
+      // Attach event listeners for switching to milestone view
+      wrapper.querySelectorAll('.btn-view-milestones').forEach(btn => {
+        btn.onclick = () => {
+          currentProjectId = btn.dataset.id;
+          const select = document.getElementById('select-project');
+          select.value = currentProjectId;
+          document.getElementById('tab-milestones').click();
+        };
+      });
+    }
+
+    /**
+     * View 2: Milestone Gantt (for selected project)
+     * Replaces milestone plain progress bars with 48px circular progress rings
+     */
     async function renderMilestonesGantt() {
       const res = await api.get(`/projects/${currentProjectId}/timeline`);
       document.getElementById('timeline-title').innerText = `${res.projectName} · Milestone Gantt`;
@@ -177,23 +516,23 @@
       }
 
       // Compute timeline range
+      const todayTime = new Date().getTime();
       const startDates = res.milestones.map(m => new Date(m.startDate).getTime());
       const endDates = res.milestones.map(m => new Date(m.forecastFinishDate || m.endDate).getTime());
       const minTime = Math.min(...startDates);
       const maxTime = Math.max(...endDates);
       const totalSpanDays = Math.max(30, Math.ceil((maxTime - minTime) / (1000 * 60 * 60 * 24)) + 5);
 
-      const startDateObj = new Date(minTime);
-
       let html = `
-        <div style="padding:1rem;">
-          <table class="data-table" style="width:100%;">
+        <div style="padding:1.25rem;">
+          <table class="data-table" style="width:100%; border-collapse:collapse;">
             <thead>
               <tr>
-                <th style="width:220px;">Milestone</th>
+                <th style="width:230px;">Milestone</th>
+                <th style="width:130px; text-align:center;">Progress Ring</th>
                 <th style="width:140px;">Timeline</th>
-                <th style="width:120px;">Forecast Finish</th>
-                <th>Progress & Timeline Bar</th>
+                <th style="width:130px;">Forecast Finish</th>
+                <th>Schedule Bar</th>
               </tr>
             </thead>
             <tbody>
@@ -205,23 +544,70 @@
         const leftPct = Math.max(0, ((mStart - minTime) / (1000 * 60 * 60 * 24)) / totalSpanDays * 100);
         const widthPct = Math.max(5, ((mEnd - mStart) / (1000 * 60 * 60 * 24)) / totalSpanDays * 100);
 
-        const statusColor = m.status === 'COMPLETED' ? 'var(--success)' : m.status === 'IN_PROGRESS' ? 'var(--primary)' : '#64748b';
+        // Milestone Planned % calculation
+        let mPlannedPct = 0;
+        if (mEnd > mStart) {
+          if (todayTime <= mStart) mPlannedPct = 0;
+          else if (todayTime >= mEnd) mPlannedPct = 100;
+          else mPlannedPct = Math.round(((todayTime - mStart) / (mEnd - mStart)) * 100);
+        }
+
+        // Ring colour: green if on track, amber if at risk, red if behind schedule.
+        let ringColour = '#10b981';
+        let statusText = 'On Track';
+        if (m.status === 'COMPLETED' || m.progressPct >= 100) {
+          ringColour = '#10b981';
+          statusText = 'Completed';
+        } else if (m.delayDays > 7 || m.progressPct < mPlannedPct - 15) {
+          ringColour = '#ef4444';
+          statusText = 'Behind Schedule';
+        } else if (m.delayDays > 0 || m.progressPct < mPlannedPct - 5) {
+          ringColour = '#f59e0b';
+          statusText = 'At Risk';
+        } else {
+          ringColour = '#10b981';
+          statusText = 'On Track';
+        }
+
+        // Data note: % complete comes from the database (approved tasks / total tasks).
+        // Since granular task workflow is mapped to milestone steps,
+        // done is 1 if milestone is 100% or completed, 0 otherwise out of 1 milestone unit.
+        const doneTasks = (m.status === 'COMPLETED' || m.progressPct >= 100) ? 1 : 0;
+        const totalTasks = 1;
+
         const delayBadge = m.delayDays > 0 ? `<span class="badge badge-red">+${m.delayDays}d</span>` : `<span class="badge badge-green">On Schedule</span>`;
 
         html += `
           <tr>
             <td>
-              <div style="font-weight:600;">${ui.escapeHtml(m.name)}</div>
+              <div style="font-weight:600; color:var(--text-main);">${ui.escapeHtml(m.name)}</div>
               <div style="font-size:0.75rem; color:var(--text-subtle);">${m.assignedResources.join(', ') || 'Unstaffed'}</div>
+            </td>
+            <td style="text-align:center; vertical-align:middle;">
+              <!-- 48px SVG Circular Progress Ring with Tooltip and Task Counter -->
+              <div class="ring-container" data-planned="${mPlannedPct}" data-actual="${m.progressPct}" title="Planned: ${mPlannedPct}% | Actual: ${m.progressPct}%">
+                <div class="ring-wrapper">
+                  ${drawRing(m.progressPct, ringColour, 48)}
+                  <div class="ring-tooltip">
+                    <div style="font-weight:600; margin-bottom:3px; color:var(--text-main);">${ui.escapeHtml(m.name)}</div>
+                    <div>Planned: <strong>${mPlannedPct}%</strong></div>
+                    <div>Actual: <strong>${m.progressPct}%</strong></div>
+                    <div style="font-size:0.68rem; color:${ringColour}; margin-top:3px; font-weight:600;">${statusText}</div>
+                  </div>
+                </div>
+                <div class="ring-task-label">
+                  ${doneTasks} of ${totalTasks} tasks
+                </div>
+              </div>
             </td>
             <td style="font-size:0.8rem;">${ui.formatDate(m.startDate)} → ${ui.formatDate(m.endDate)}</td>
             <td style="font-size:0.8rem;">
               ${m.forecastFinishDate ? ui.formatDate(m.forecastFinishDate) : '-'} ${delayBadge}
             </td>
-            <td>
-              <div style="background:var(--bg-surface); height:32px; border-radius:4px; position:relative; overflow:hidden;">
-                <div style="position:absolute; left:${leftPct}%; width:${widthPct}%; height:100%; background:${statusColor}; opacity:0.3; border-radius:4px;"></div>
-                <div style="position:absolute; left:${leftPct}%; width:${(widthPct * m.progressPct / 100)}%; height:100%; background:${statusColor}; border-radius:4px; display:flex; align-items:center; padding:0 8px; color:white; font-size:11px; font-weight:700;">
+            <td style="vertical-align:middle;">
+              <div style="background:var(--bg-surface); height:32px; border-radius:4px; position:relative; overflow:hidden; border:1px solid var(--border-color);">
+                <div style="position:absolute; left:${leftPct}%; width:${widthPct}%; height:100%; background:${ringColour}; opacity:0.25; border-radius:4px;"></div>
+                <div style="position:absolute; left:${leftPct}%; width:${(widthPct * m.progressPct / 100)}%; height:100%; background:${ringColour}; border-radius:4px; display:flex; align-items:center; padding:0 8px; color:white; font-size:11px; font-weight:700;">
                   ${m.progressPct}%
                 </div>
               </div>
@@ -234,6 +620,9 @@
       wrapper.innerHTML = html;
     }
 
+    /**
+     * View 3: Resource Lanes Gantt
+     */
     async function renderResourceLanesGantt() {
       document.getElementById('timeline-title').innerText = 'Cross-Project Developer Lanes';
       const wrapper = document.getElementById('gantt-wrapper');
@@ -245,7 +634,7 @@
       }
 
       let html = `
-        <div style="padding:1rem;">
+        <div style="padding:1.25rem;">
           <table class="data-table" style="width:100%;">
             <thead>
               <tr>

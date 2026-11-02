@@ -174,9 +174,9 @@ INSERT INTO allocation (id, resource_id, milestone_id, start_date, end_date, all
 INSERT INTO allocation (id, resource_id, milestone_id, start_date, end_date, allocation_pct, override_confirmed) VALUES
 (2, 1, 3, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 15 DAY), 50, TRUE);
 
--- #3: Rahul -> ALPHA M2, 80%, T-5 to T+25
+-- #3: Rahul -> ALPHA M2, 80%, T-5 to T+30
 INSERT INTO allocation (id, resource_id, milestone_id, start_date, end_date, allocation_pct, override_confirmed) VALUES
-(3, 3, 2, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 25 DAY), 80, FALSE);
+(3, 3, 2, DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 80, FALSE);
 
 -- #4: Rahul -> ALPHA M1, 10%, T to T+7 (SKILL_MISMATCH match 0%)
 INSERT INTO allocation (id, resource_id, milestone_id, start_date, end_date, allocation_pct, override_confirmed) VALUES

@@ -123,7 +123,7 @@ public class BudgetService {
                 .map(t -> new BudgetTransactionSnapshot(t.getId(), t.getProjectId(), t.getTxnDate(), t.getAmount(), t.getCategory(), t.getResourceId(), t.getNote()))
                 .toList();
 
-        int burnWindow = settingsService.getInt("burn.window.days", 14);
+        int burnWindow = settingsService.getInt("burn.window.days", 30);
         int hoursPerDay = settingsService.getInt("hours.per.day", 8);
 
         return BudgetCalculator.calculateProjectForecast(

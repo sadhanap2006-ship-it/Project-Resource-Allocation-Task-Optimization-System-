@@ -27,6 +27,9 @@ public class ResourceService {
     private final CloudResourceRepository cloudResourceRepository;
     private final ResourceSkillRepository resourceSkillRepository;
     private final SkillRepository skillRepository;
+    private final ProjectRepository projectRepository;
+    private final ConflictDetectionService conflictDetectionService;
+
 
     public ResourceService(
             ResourceRepository resourceRepository,
@@ -34,14 +37,20 @@ public class ResourceService {
             HardwareAssetRepository hardwareAssetRepository,
             CloudResourceRepository cloudResourceRepository,
             ResourceSkillRepository resourceSkillRepository,
-            SkillRepository skillRepository) {
+            SkillRepository skillRepository,
+            ProjectRepository projectRepository,
+            @org.springframework.context.annotation.Lazy ConflictDetectionService conflictDetectionService) {
         this.resourceRepository = resourceRepository;
         this.developerProfileRepository = developerProfileRepository;
         this.hardwareAssetRepository = hardwareAssetRepository;
         this.cloudResourceRepository = cloudResourceRepository;
         this.resourceSkillRepository = resourceSkillRepository;
         this.skillRepository = skillRepository;
+        this.projectRepository = projectRepository;
+        this.conflictDetectionService = conflictDetectionService;
     }
+
+
 
     @Transactional(readOnly = true)
     public List<ResourceResponse> getAllResources(ResourceType type, ResourceStatus status, String query) {
@@ -246,6 +255,60 @@ public class ResourceService {
             }
         }
 
+        int currentLoad = 0;
+        int peakLoad = 0;
+        int remainingCapacity = resource.getCapacityPct();
+        List<edu.sist.prs.dto.response.ResourceProjectAllocationDto> activeProjects = List.of();
+
+        if (conflictDetectionService != null) {
+            try {
+                var allocations = conflictDetectionService.loadAllocationSnapshots();
+                var unavailabilities = conflictDetectionService.loadUnavailabilitySnapshots();
+                java.time.LocalDate today = java.time.LocalDate.now();
+
+                java.time.LocalDate evalDate = today;
+                if (resource.getType() == ResourceType.DEVELOPER && edu.sist.prs.util.WorkingDays.isWeekend(evalDate)) {
+                    evalDate = evalDate.with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+                }
+
+                edu.sist.prs.engine.model.ResourceSnapshot snapshot = new edu.sist.prs.engine.model.ResourceSnapshot(
+                    resource.getId(),
+                    resource.getType(),
+                    resource.getName(),
+                    resource.getStatus(),
+                    resource.getCapacityPct(),
+                    resource.getCostRate(),
+                    resource.getCostUnit(),
+                    dailyQuotaUnits,
+                    monthlyCap,
+                    List.of()
+                );
+
+                var workload = edu.sist.prs.engine.CapacityCalculator.calculateWorkload(snapshot, evalDate, allocations, unavailabilities);
+                currentLoad = workload.load();
+                remainingCapacity = workload.remainingCapacity();
+                peakLoad = edu.sist.prs.engine.CapacityCalculator.calculatePeakLoad30Days(resource.getId(), resource.getType(), today, allocations);
+
+                var projectMap = projectRepository.findAll().stream()
+                    .collect(Collectors.toMap(edu.sist.prs.entity.ProjectEntity::getId, java.util.function.Function.identity(), (a, b) -> a));
+
+                activeProjects = allocations.stream()
+                    .filter(a -> a.resourceId().equals(resource.getId()) && a.projectId() != null
+                            && !a.endDate().isBefore(today) && !a.startDate().isAfter(today.plusDays(30)))
+                    .map(a -> {
+                        var p = projectMap.get(a.projectId());
+                        String pCode = (p != null) ? p.getCode() : "PROJ";
+                        String pName = (p != null) ? p.getName() : "Active Project";
+                        return new edu.sist.prs.dto.response.ResourceProjectAllocationDto(a.projectId(), pCode, pName, a.allocationPct());
+                    })
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            } catch (Exception e) {
+                // Fallback gracefully if snapshots unavailable
+            }
+        }
+
         return new ResourceResponse(
             resource.getId(),
             resource.getType(),
@@ -263,10 +326,11 @@ public class ResourceService {
             unitName,
             dailyQuotaUnits,
             monthlyCap,
-            0, // Default placeholders, populated by Engine in Phase 4
-            0,
-            resource.getCapacityPct(),
-            List.of()
+            currentLoad,
+            peakLoad,
+            remainingCapacity,
+            activeProjects
         );
     }
+
 }

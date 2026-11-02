@@ -252,17 +252,30 @@ public final class BudgetCalculator {
         ev = ev.setScale(2, RoundingMode.HALF_UP);
         planTotal = planTotal.setScale(2, RoundingMode.HALF_UP);
 
-        Double cpi = (actualSpend.compareTo(BigDecimal.ZERO) > 0)
-                ? ev.divide(actualSpend, 4, RoundingMode.HALF_UP).doubleValue()
+        // Scale EV to project budget so that EV is in the same scale as total budget and actual spend
+        // (Fixes EVM EAC exploding to 10x budget when milestone plan costs sum to less than total budget)
+        BigDecimal scaledEv = ev;
+        if (planTotal.compareTo(BigDecimal.ZERO) > 0 && totalBudget.compareTo(BigDecimal.ZERO) > 0) {
+            scaledEv = ev.multiply(totalBudget).divide(planTotal, 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal scaledPv = pv;
+        if (planTotal.compareTo(BigDecimal.ZERO) > 0 && totalBudget.compareTo(BigDecimal.ZERO) > 0) {
+            scaledPv = pv.multiply(totalBudget).divide(planTotal, 2, RoundingMode.HALF_UP);
+        }
+
+        Double cpi = (actualSpend.compareTo(BigDecimal.ZERO) > 0 && scaledEv.compareTo(BigDecimal.ZERO) > 0)
+                ? scaledEv.divide(actualSpend, 4, RoundingMode.HALF_UP).doubleValue()
                 : null;
 
-        Double spi = (pv.compareTo(BigDecimal.ZERO) > 0)
-                ? ev.divide(pv, 4, RoundingMode.HALF_UP).doubleValue()
+        Double spi = (scaledPv.compareTo(BigDecimal.ZERO) > 0 && scaledEv.compareTo(BigDecimal.ZERO) > 0)
+                ? scaledEv.divide(scaledPv, 4, RoundingMode.HALF_UP).doubleValue()
                 : null;
 
-        BigDecimal eac = (ev.compareTo(BigDecimal.ZERO) > 0 && actualSpend.compareTo(BigDecimal.ZERO) > 0)
-                ? totalBudget.multiply(actualSpend).divide(ev, 2, RoundingMode.HALF_UP)
+        BigDecimal eac = (scaledEv.compareTo(BigDecimal.ZERO) > 0 && actualSpend.compareTo(BigDecimal.ZERO) > 0)
+                ? totalBudget.multiply(actualSpend).divide(scaledEv, 2, RoundingMode.HALF_UP)
                 : null;
+
 
         // 6. Generate Time Series for charts
         LocalDate chartEnd = projectEndDate;
@@ -338,9 +351,10 @@ public final class BudgetCalculator {
                 forecastStatus,
                 message,
                 planTotal,
-                pv,
-                ev,
+                scaledPv,
+                scaledEv,
                 cpi,
+
                 spi,
                 eac,
                 series,

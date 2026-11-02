@@ -20,6 +20,11 @@
       text-align: left;
       padding-left: 1rem;
     }
+    .cell-weekend {
+      background: rgba(100, 116, 139, 0.15) !important;
+      color: #64748b !important;
+      border: 1px dashed rgba(100, 116, 139, 0.3) !important;
+    }
   </style>
 </head>
 <body>
@@ -54,6 +59,7 @@
           <span class="heatmap-cell cell-healthy">HEALTHY (50% - 85%)</span>
           <span class="heatmap-cell cell-high">HIGH (&gt;85% - 100%)</span>
           <span class="heatmap-cell cell-over">OVER (&gt;100% or &gt;Cap)</span>
+          <span class="heatmap-cell cell-weekend">WEEKEND (Off)</span>
         </div>
       </div>
 
@@ -125,15 +131,18 @@
         `;
 
         r.cells.forEach(c => {
-          const bandClass = c.band === 'OVER' ? 'cell-over'
+          const bandClass = c.band === 'WEEKEND' ? 'cell-weekend'
+            : c.band === 'OVER' ? 'cell-over'
             : c.band === 'HIGH' ? 'cell-high'
             : c.band === 'HEALTHY' ? 'cell-healthy'
             : 'cell-low';
 
+          const cellText = c.band === 'WEEKEND' ? '-' : `${c.loadPct}%`;
+
           rowHtml += `
             <td>
-              <div class="heatmap-cell ${bandClass}">
-                ${c.loadPct}%
+              <div class="heatmap-cell ${bandClass}" title="${c.band === 'WEEKEND' ? 'Weekend - Non-working day' : `${c.loadPct}% allocated (Capacity: ${c.capacityPct}%)`}">
+                ${cellText}
               </div>
             </td>
           `;

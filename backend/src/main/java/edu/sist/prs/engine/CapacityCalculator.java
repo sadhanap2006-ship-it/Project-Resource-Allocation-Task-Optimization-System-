@@ -91,6 +91,18 @@ public final class CapacityCalculator {
         return totalLoad;
     }
 
+    public static int calculateLoad(
+            Long resourceId,
+            ResourceType resourceType,
+            LocalDate date,
+            Collection<AllocationSnapshot> allocations
+    ) {
+        if (resourceType == ResourceType.DEVELOPER && WorkingDays.isWeekend(date)) {
+            return 0;
+        }
+        return calculateLoad(resourceId, date, allocations);
+    }
+
     /**
      * remaining(r, d) = capacity(r, d) - load(r, d) (may be negative).
      */
@@ -100,9 +112,52 @@ public final class CapacityCalculator {
             Collection<AllocationSnapshot> allocations,
             Collection<UnavailabilitySnapshot> unavailabilities
     ) {
+        if (resource.type() == ResourceType.DEVELOPER && WorkingDays.isWeekend(date)) {
+            return 0;
+        }
         int cap = calculateCapacity(resource, date, unavailabilities);
-        int load = calculateLoad(resource.id(), date, allocations);
+        int load = calculateLoad(resource.id(), resource.type(), date, allocations);
         return cap - load;
+    }
+
+    public record WorkloadCalculation(
+            Long resourceId,
+            LocalDate date,
+            int baseCapacity,
+            int effectiveCapacity,
+            int load,
+            int remainingCapacity,
+            double utilizationPct,
+            boolean isWeekend
+    ) {}
+
+    /**
+     * Single shared utilization and capacity calculation for Developers table,
+     * Heatmap, and Reassign Task modal.
+     */
+    public static WorkloadCalculation calculateWorkload(
+            ResourceSnapshot resource,
+            LocalDate date,
+            Collection<AllocationSnapshot> allocations,
+            Collection<UnavailabilitySnapshot> unavailabilities
+    ) {
+        boolean isWeekend = (resource.type() == ResourceType.DEVELOPER && WorkingDays.isWeekend(date));
+        int baseCapacity = resource.capacityPct();
+        int effectiveCapacity = calculateCapacity(resource, date, unavailabilities);
+        int load = isWeekend ? 0 : calculateLoad(resource.id(), resource.type(), date, allocations);
+        int remaining = isWeekend ? 0 : Math.max(0, effectiveCapacity - load);
+        double utilization = (baseCapacity > 0) ? ((double) load / baseCapacity) * 100.0 : 0.0;
+
+        return new WorkloadCalculation(
+                resource.id(),
+                date,
+                baseCapacity,
+                effectiveCapacity,
+                load,
+                remaining,
+                utilization,
+                isWeekend
+        );
     }
 
     /**
@@ -114,12 +169,24 @@ public final class CapacityCalculator {
             LocalDate endDate,
             Collection<AllocationSnapshot> allocations
     ) {
+        return calculatePeakLoad(resourceId, null, startDate, endDate, allocations);
+    }
+
+    public static int calculatePeakLoad(
+            Long resourceId,
+            ResourceType resourceType,
+            LocalDate startDate,
+            LocalDate endDate,
+            Collection<AllocationSnapshot> allocations
+    ) {
         int peak = 0;
         LocalDate current = startDate;
         while (!current.isAfter(endDate)) {
-            int load = calculateLoad(resourceId, current, allocations);
-            if (load > peak) {
-                peak = load;
+            if (resourceType != ResourceType.DEVELOPER || !WorkingDays.isWeekend(current)) {
+                int load = calculateLoad(resourceId, current, allocations);
+                if (load > peak) {
+                    peak = load;
+                }
             }
             current = current.plusDays(1);
         }
@@ -134,7 +201,16 @@ public final class CapacityCalculator {
             LocalDate today,
             Collection<AllocationSnapshot> allocations
     ) {
-        return calculatePeakLoad(resourceId, today, today.plusDays(29), allocations);
+        return calculatePeakLoad(resourceId, null, today, today.plusDays(29), allocations);
+    }
+
+    public static int calculatePeakLoad30Days(
+            Long resourceId,
+            ResourceType resourceType,
+            LocalDate today,
+            Collection<AllocationSnapshot> allocations
+    ) {
+        return calculatePeakLoad(resourceId, resourceType, today, today.plusDays(29), allocations);
     }
 
     /**

@@ -10,4 +10,10 @@ public record DailyChartPoint(
         BigDecimal plannedValueCumulative,
         BigDecimal budget,
         BigDecimal remainingBudget
-) {}
+) {
+    @com.fasterxml.jackson.annotation.JsonProperty("budgetRemaining")
+    public BigDecimal budgetRemaining() {
+        return remainingBudget;
+    }
+}
+

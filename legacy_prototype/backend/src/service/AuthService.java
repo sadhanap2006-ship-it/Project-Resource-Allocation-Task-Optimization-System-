@@ -3,12 +3,14 @@ package service;
 import dao.CertificationDAO;
 import dao.DeveloperDAO;
 import dao.EmployeeSkillDAO;
+import dao.SkillDAO;
 import dao.UserDAO;
 import dto.LoginRequestDTO;
 import dto.LoginResponseDTO;
 import model.Certification;
 import model.Developer;
 import model.EmployeeSkill;
+import model.Skill;
 import model.User;
 import util.JwtUtil;
 
@@ -24,6 +26,7 @@ public class AuthService {
     private final DeveloperDAO developerDAO = new DeveloperDAO();
     private final EmployeeSkillDAO employeeSkillDAO = new EmployeeSkillDAO();
     private final CertificationDAO certificationDAO = new CertificationDAO();
+    private final SkillDAO skillDAO = new SkillDAO();
 
     public LoginResponseDTO login(LoginRequestDTO req) throws SQLException {
         if (req == null || req.getEmail() == null || req.getPassword() == null) {
@@ -112,36 +115,81 @@ public class AuthService {
         );
     }
 
-    public boolean completeOnboarding(int userId, int devId, List<Map<String, Object>> skills, List<Map<String, Object>> certs) throws SQLException {
+    public boolean completeOnboarding(int userId, int devId, List<?> skills, List<?> certs) throws SQLException {
         if (skills != null) {
-            for (Map<String, Object> s : skills) {
-                int skillId = s.get("skillId") instanceof Number ? ((Number) s.get("skillId")).intValue() : Integer.parseInt(s.get("skillId").toString());
-                String proficiency = (String) s.getOrDefault("proficiency", "INTERMEDIATE");
-                int exp = s.get("yearsExperience") instanceof Number ? ((Number) s.get("yearsExperience")).intValue() : 1;
-                boolean interested = Boolean.TRUE.equals(s.get("interestedInFuture"));
+            for (Object item : skills) {
+                if (item == null) continue;
+                int skillId = -1;
+                String proficiency = "INTERMEDIATE";
+                int exp = 1;
+                boolean interested = false;
 
-                EmployeeSkill es = new EmployeeSkill();
-                es.setDeveloperId(devId);
-                es.setSkillId(skillId);
-                es.setProficiency(proficiency);
-                es.setYearsExperience(exp);
-                es.setStatus("PENDING");
-                es.setSource("MANUAL");
-                es.setInterestedInFuture(interested);
-                employeeSkillDAO.saveOrUpdate(es);
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> s = (Map<String, Object>) item;
+                    Object skillIdObj = s.get("skillId");
+                    if (skillIdObj instanceof Number) {
+                        skillId = ((Number) skillIdObj).intValue();
+                    } else if (skillIdObj != null) {
+                        try {
+                            skillId = Integer.parseInt(skillIdObj.toString());
+                        } catch (NumberFormatException ignored) {}
+                    }
+
+                    if (skillId <= 0 && s.get("skillName") != null) {
+                        String sName = s.get("skillName").toString().trim();
+                        Skill found = skillDAO.findByName(sName);
+                        if (found != null) {
+                            skillId = found.getId();
+                        } else {
+                            skillId = skillDAO.insert(new Skill(0, sName, "Technical"));
+                        }
+                    }
+
+                    proficiency = (String) s.getOrDefault("proficiency", "INTERMEDIATE");
+                    Object expObj = s.get("yearsExperience");
+                    exp = expObj instanceof Number ? ((Number) expObj).intValue() : 1;
+                    interested = Boolean.TRUE.equals(s.get("interestedInFuture"));
+                } else if (item instanceof String) {
+                    String sName = ((String) item).trim();
+                    if (!sName.isEmpty()) {
+                        Skill found = skillDAO.findByName(sName);
+                        if (found != null) {
+                            skillId = found.getId();
+                        } else {
+                            skillId = skillDAO.insert(new Skill(0, sName, "Technical"));
+                        }
+                    }
+                }
+
+                if (skillId > 0) {
+                    EmployeeSkill es = new EmployeeSkill();
+                    es.setDeveloperId(devId);
+                    es.setSkillId(skillId);
+                    es.setProficiency(proficiency);
+                    es.setYearsExperience(exp);
+                    es.setStatus("PENDING");
+                    es.setSource("MANUAL");
+                    es.setInterestedInFuture(interested);
+                    employeeSkillDAO.saveOrUpdate(es);
+                }
             }
         }
 
         if (certs != null) {
-            for (Map<String, Object> c : certs) {
-                Certification cert = new Certification();
-                cert.setDeveloperId(devId);
-                cert.setName((String) c.get("name"));
-                cert.setIssuingBody((String) c.get("issuingBody"));
-                cert.setIssueDate((String) c.getOrDefault("issueDate", "2026-01-01"));
-                cert.setConfidenceScore(0.95);
-                cert.setVerified(true);
-                certificationDAO.insert(cert);
+            for (Object item : certs) {
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> c = (Map<String, Object>) item;
+                    Certification cert = new Certification();
+                    cert.setDeveloperId(devId);
+                    cert.setName((String) c.get("name"));
+                    cert.setIssuingBody((String) c.get("issuingBody"));
+                    cert.setIssueDate((String) c.getOrDefault("issueDate", "2026-01-01"));
+                    cert.setConfidenceScore(0.95);
+                    cert.setVerified(true);
+                    certificationDAO.insert(cert);
+                }
             }
         }
 

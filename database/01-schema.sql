@@ -385,7 +385,7 @@ CREATE TABLE notification (
 INSERT INTO settings (setting_key, setting_value, description) VALUES
 ('burnout.threshold.pct', '85', 'Weekly average load percentage that counts toward burnout risk'),
 ('burnout.consecutive.weeks', '3', 'Consecutive weeks needed for BURNOUT_RISK alert'),
-('burn.window.days', '14', 'Rolling window in days used for calculating spend burn rate'),
+('burn.window.days', '30', 'Rolling window in days used for calculating spend burn rate'),
 ('budget.cpi.warning', '0.9', 'Cost Performance Index (CPI) threshold below which BUDGET_RISK WARNING is raised'),
 ('budget.critical.days', '14', 'Budget run-out within this many days of today raises CRITICAL risk'),
 ('deadline.warning.days', '7', 'Days before milestone end for triggering deadline alert'),

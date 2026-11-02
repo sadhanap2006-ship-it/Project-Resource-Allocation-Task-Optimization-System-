@@ -1971,8 +1971,14 @@ function updateAssignCapacityPreview() {
     }
 
     const currentAlloc = dev.currentAllocation || 0;
+    const remainingCap = dev.remainingCapacity !== undefined ? dev.remainingCapacity : Math.max(0, (dev.availabilityPercentage || 100) - currentAlloc);
     const projectedAlloc = currentAlloc + requestedPct;
     const isOverAllocated = projectedAlloc > 100;
+
+    let zeroCapWarning = "";
+    if (remainingCap <= 0) {
+        zeroCapWarning = `<div style="margin-top: 6px; color: #b45309; background: #fef3c7; border: 1px solid #f59e0b; padding: 4px 8px; border-radius: 4px; font-weight: 600;">⚠️ Warning: Selected team member has 0% available capacity.</div>`;
+    }
 
     let skillWarning = "";
     const mSkills = parseSkillsList(milestone?.requiredSkillNames || milestone?.requiredSkills);
@@ -1996,9 +2002,11 @@ function updateAssignCapacityPreview() {
             <br>
             Projected Total: <strong style="color: ${isOverAllocated ? 'var(--critical)' : 'var(--primary)'}; font-size: 0.95rem;">${projectedAlloc}%</strong> (Available: ${dev.availabilityPercentage}%)
         </div>
+        ${zeroCapWarning}
         ${skillWarning}
     `;
 }
+
 
 function initFiltersAndSearch() {
     const projSearch = document.getElementById("projectSearchInput");
@@ -2098,9 +2106,25 @@ async function handleCreateMilestone(e) {
 
 async function handleAssignResource(e) {
     e.preventDefault();
-    const milestoneId = parseInt(document.getElementById("modalAssignMilestoneSelect").value);
-    const devId = parseInt(document.getElementById("modalAssignDevSelect").value);
-    const pct = parseInt(document.getElementById("modalAssignPctInput").value);
+    const milestoneSelect = document.getElementById("modalAssignMilestoneSelect");
+    const devSelect = document.getElementById("modalAssignDevSelect");
+    const milestoneVal = milestoneSelect ? milestoneSelect.value.trim() : "";
+    const devVal = devSelect ? devSelect.value.trim() : "";
+
+    if (!milestoneVal || !devVal) {
+        showToast("Please select both a task and a target team member", "warning");
+        return;
+    }
+
+    const milestoneId = parseInt(milestoneVal);
+    const devId = parseInt(devVal);
+    if (isNaN(milestoneId) || isNaN(devId)) {
+        showToast("Please select both a task and a target team member", "warning");
+        return;
+    }
+
+    const pct = parseInt(document.getElementById("modalAssignPctInput").value) || 50;
+
 
     try {
         const res = await fetch("/api/allocations", {

@@ -154,17 +154,29 @@
 
         if (r.type === 'DEVELOPER') {
           col2 = r.skills && r.skills.length > 0
-            ? r.skills.map(s => `<span class="badge badge-neutral" style="margin:2px;">${ui.escapeHtml(s.name)} (L${s.proficiencyLevel})</span>`).join('')
+            ? r.skills.map(s => {
+                const skillLabel = s.name || s.skillName || 'Skill';
+                const profLabel = s.proficiencyText || (s.proficiencyLevel != null ? ('L' + s.proficiencyLevel) : (s.proficiency ? 'L' + s.proficiency : 'INTERMEDIATE'));
+                return `<span class="badge badge-neutral" style="margin:2px;">${ui.escapeHtml(skillLabel)} (${ui.escapeHtml(profLabel)})</span>`;
+              }).join('')
             : '<span style="color:var(--text-subtle);">No skills mapped</span>';
-          col3 = ui.formatCurrency(r.costPerHour);
+          col3 = ui.formatCurrency(r.costPerHour || r.costRate);
+          const availCap = (r.remainingCapacity !== undefined && r.remainingCapacity !== null) ? r.remainingCapacity : r.capacityPct;
+          col4 = `<strong>${availCap}%</strong> available`;
+          if (r.currentLoad > 0) {
+            col4 += `<br><span style="font-size:0.75rem; color:var(--text-muted);">(Load: ${r.currentLoad}%)</span>`;
+          }
         } else if (r.type === 'HARDWARE') {
-          col2 = `<span style="font-weight:600;">${ui.escapeHtml(r.hardware?.assetTag || '')}</span> · ${ui.escapeHtml(r.hardware?.location || '')}`;
-          col3 = `${ui.formatCurrency(r.costPerDay)} / day`;
+          col2 = `<span style="font-weight:600;">${ui.escapeHtml(r.hardware?.assetTag || r.assetTag || '')}</span> · ${ui.escapeHtml(r.hardware?.location || r.labLocation || '')}`;
+          col3 = `${ui.formatCurrency(r.costPerDay || r.costRate)} / day`;
+          const availCap = (r.remainingCapacity !== undefined && r.remainingCapacity !== null) ? r.remainingCapacity : r.capacityPct;
+          col4 = `<strong>${availCap}%</strong>`;
         } else {
-          col2 = `${ui.escapeHtml(r.cloud?.provider || '')} · ${ui.escapeHtml(r.cloud?.unitType || '')}`;
-          col3 = `${ui.formatCurrency(r.costPerUnit)}/unit (Quota: ${r.dailyQuota || '∞'}/day)`;
+          col2 = `${ui.escapeHtml(r.cloud?.provider || r.provider || '')} · ${ui.escapeHtml(r.cloud?.unitType || r.unitName || '')}`;
+          col3 = `${ui.formatCurrency(r.costPerUnit || r.costRate)}/unit (Quota: ${r.dailyQuota || r.dailyQuotaUnits || '∞'}/day)`;
           col4 = ui.formatCurrency(r.monthlyCap);
         }
+
 
         return `
           <tr>

@@ -76,17 +76,23 @@ public class HeatmapService {
                 LocalDate pEnd = periods.get(i)[1];
 
                 int load;
-                if (pStart.equals(pEnd)) {
-                    load = CapacityCalculator.calculateLoad(r.getId(), pStart, allocations);
+                boolean isWeekend = (r.getType() == ResourceType.DEVELOPER && pStart.equals(pEnd) && edu.sist.prs.util.WorkingDays.isWeekend(pStart));
+
+                if (isWeekend) {
+                    load = 0;
+                } else if (pStart.equals(pEnd)) {
+                    load = CapacityCalculator.calculateLoad(r.getId(), r.getType(), pStart, allocations);
                 } else {
-                    load = CapacityCalculator.calculatePeakLoad(r.getId(), pStart, pEnd, allocations);
+                    load = CapacityCalculator.calculatePeakLoad(r.getId(), r.getType(), pStart, pEnd, allocations);
                 }
 
                 double loadPct = load;
-                double capacityPct = r.getCapacityPct();
+                double capacityPct = isWeekend ? 0.0 : r.getCapacityPct();
 
                 String band;
-                if (loadPct > capacityPct || loadPct > 100.0) {
+                if (isWeekend) {
+                    band = "WEEKEND";
+                } else if (loadPct > capacityPct || loadPct > 100.0) {
                     band = "OVER";
                 } else if (loadPct > 85.0) {
                     band = "HIGH";

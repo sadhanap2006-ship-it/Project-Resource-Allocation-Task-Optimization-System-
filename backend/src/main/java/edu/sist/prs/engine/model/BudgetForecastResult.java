@@ -27,4 +27,20 @@ public record BudgetForecastResult(
         BigDecimal eac,
         List<DailyChartPoint> series,
         List<DailyChartPoint> remainingSeries
-) {}
+) {
+    @com.fasterxml.jackson.annotation.JsonProperty("budgetUtilisationPct")
+    public Double budgetUtilisationPct() {
+        return utilisationPct;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("burnRateDaily")
+    public BigDecimal burnRateDaily() {
+        return burnRate;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("dailyForecast")
+    public List<DailyChartPoint> dailyForecast() {
+        return series;
+    }
+}
+

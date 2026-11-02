@@ -145,7 +145,10 @@
             <td>${statusBadge}</td>
             <td>
               ${c.status === 'OPEN' ? `
-                <button class="btn btn-secondary btn-sm btn-ack" data-id="${c.id}">Acknowledge</button>
+                <div style="display:flex; gap:0.4rem;">
+                  <button class="btn btn-secondary btn-sm btn-ack" data-id="${c.id}">Acknowledge</button>
+                  <button class="btn btn-primary btn-sm btn-reassign" data-id="${c.id}" data-res="${c.resourceId || ''}" data-proj="${c.projectId || ''}" data-ms="${c.milestoneId || ''}">Reassign Task</button>
+                </div>
               ` : '-'}
             </td>
           </tr>
@@ -163,6 +166,129 @@
           }
         };
       });
+
+      document.querySelectorAll('.btn-reassign').forEach(btn => {
+        btn.onclick = async () => {
+          await openReassignTaskModal(btn.dataset.id, btn.dataset.res, btn.dataset.proj, btn.dataset.ms);
+        };
+      });
+    }
+
+    async function openReassignTaskModal(conflictId, resourceId, projectId, milestoneId) {
+      try {
+        const [allocs, resources] = await Promise.all([
+          api.get('/allocations'),
+          api.get('/resources?type=DEVELOPER')
+        ]);
+
+        const devResources = resources || [];
+        let matchingAllocs = allocs || [];
+        if (resourceId) {
+          const filtered = matchingAllocs.filter(a => String(a.resourceId) === String(resourceId));
+          if (filtered.length > 0) matchingAllocs = filtered;
+        }
+
+        const taskOptions = matchingAllocs.map(a => `
+          <option value="${a.id}">#${a.id} — ${ui.escapeHtml(a.resourceName)} (${a.allocationPct}%) on ${ui.escapeHtml(a.projectName || 'Project')} · ${ui.escapeHtml(a.milestoneName)}</option>
+        `).join('');
+
+        const memberOptions = devResources.map(r => {
+          const remCap = (r.remainingCapacity !== undefined && r.remainingCapacity !== null) ? r.remainingCapacity : r.capacityPct;
+          return `<option value="${r.id}" data-capacity="${remCap}">${ui.escapeHtml(r.name)} (${remCap}% available capacity)</option>`;
+        }).join('');
+
+        ui.showModal({
+          title: 'Reassign Task / Allocation',
+          bodyHtml: `
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" for="reassign-task-select">Select Task / Milestone Allocation</label>
+              <select id="reassign-task-select" class="form-control">
+                <option value="">-- Select a Task --</option>
+                ${taskOptions}
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" for="reassign-target-select">Select Target Team Member</label>
+              <select id="reassign-target-select" class="form-control">
+                <option value="">-- Select Target Team Member --</option>
+                ${memberOptions}
+              </select>
+            </div>
+            <div id="reassign-capacity-warning" style="display:none; color: #b45309; background: #fef3c7; border: 1px solid #f59e0b; padding: 0.6rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; margin-top:0.75rem;">
+              ⚠️ Warning: Selected team member has 0% available capacity.
+            </div>
+          `,
+          confirmText: 'Reassign Task',
+          onConfirm: async (modal) => {
+            const taskSelect = modal.querySelector('#reassign-task-select');
+            const targetSelect = modal.querySelector('#reassign-target-select');
+            const taskId = taskSelect ? taskSelect.value.trim() : '';
+            const targetMemberId = targetSelect ? targetSelect.value.trim() : '';
+
+            // Strict validation check avoiding false negatives
+            if (!taskId || !targetMemberId) {
+              ui.showToast('Please select both a task and a target team member', 'error');
+              return false;
+            }
+
+            const allocId = parseInt(taskId);
+            const toResId = parseInt(targetMemberId);
+            const targetAlloc = (allocs || []).find(a => a.id === allocId);
+
+            if (!targetAlloc) {
+              ui.showToast('Selected allocation not found.', 'error');
+              return false;
+            }
+
+            try {
+              await api.put(`/allocations/${allocId}`, {
+                resourceId: toResId,
+                milestoneId: targetAlloc.milestoneId,
+                startDate: targetAlloc.startDate,
+                endDate: targetAlloc.endDate,
+                allocationPct: targetAlloc.allocationPct,
+                overrideConfirmed: true
+              });
+              ui.showToast('Task reassigned successfully!', 'success');
+              if (conflictId) {
+                try { await api.put(`/conflicts/${conflictId}/acknowledge`); } catch (ignored) {}
+              }
+              await loadConflicts();
+              return true;
+            } catch (err) {
+              ui.showToast(err.message, 'error');
+              return false;
+            }
+          }
+        });
+
+        // Add real-time change listener to check target capacity
+        setTimeout(() => {
+          const targetSelect = document.getElementById('reassign-target-select');
+          const warningEl = document.getElementById('reassign-capacity-warning');
+          if (targetSelect && warningEl) {
+            const checkCap = () => {
+              const selectedOpt = targetSelect.selectedOptions[0];
+              if (selectedOpt && selectedOpt.dataset.capacity !== undefined) {
+                const cap = parseInt(selectedOpt.dataset.capacity);
+                if (cap <= 0) {
+                  warningEl.style.display = 'block';
+                } else {
+                  warningEl.style.display = 'none';
+                }
+              } else {
+                warningEl.style.display = 'none';
+              }
+            };
+            targetSelect.onchange = checkCap;
+          }
+        }, 50);
+
+      } catch (err) {
+        ui.showToast(err.message, 'error');
+      }
+    }
+
     }
 
     document.getElementById('btn-run-scan').onclick = async () => {
